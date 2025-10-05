@@ -9,7 +9,10 @@ class ClubsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: ClubsHome());
+    return MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      home: const ClubsHome(),
+    );
   }
 }
 
@@ -28,8 +31,9 @@ class _ClubsHomeState extends State<ClubsHome> {
   );
   static const List<Widget> _widgetOptions = <Widget>[
     Text('Home', style: optionStyle),
-    Text('Events', style: optionStyle),
-    Text('Members', style: optionStyle),
+    Text('Search', style: optionStyle),
+    Text('Saved', style: optionStyle),
+    Text('Profile', style: optionStyle),
   ];
 
   void _onItemTapped(int index) {
@@ -41,17 +45,51 @@ class _ClubsHomeState extends State<ClubsHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Clubs App')),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home)),
-          BottomNavigationBarItem(icon: Icon(Icons.event)),
-          BottomNavigationBarItem(icon: Icon(Icons.people)),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
+      bottomNavigationBar: Container(
+        height: 70,
+        color: Colors.black, // Changed to black
+        padding: EdgeInsets.only(bottom: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: Icon(
+                _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
+                color: Color(0xFF807373),
+              ),
+              iconSize: 30,
+              onPressed: () => _onItemTapped(0),
+            ),
+            IconButton(
+              icon: Icon(
+                _selectedIndex == 1 ? Icons.search : Icons.search_outlined,
+                color: Color(0xFF807373),
+                weight: _selectedIndex == 1 ? 900 : 200,
+              ),
+              iconSize: 30,
+              onPressed: () => _onItemTapped(1),
+            ),
+            IconButton(
+              icon: Icon(
+                _selectedIndex == 2 ? Icons.bookmark : Icons.bookmark_border,
+                color: Color(0xFF807373),
+              ),
+              iconSize: 30,
+              onPressed: () => _onItemTapped(2),
+            ),
+            IconButton(
+              icon: Icon(
+                _selectedIndex == 3
+                    ? Icons.person
+                    : Icons.person_outline_rounded,
+                color: Color(0xFF807373),
+              ),
+              iconSize: 30,
+              onPressed: () => _onItemTapped(3),
+            ),
+          ],
+        ),
       ),
     );
   }
