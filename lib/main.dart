@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 /// Flutter code sample for [BottomNavigationBar].
 
@@ -62,11 +63,17 @@ class _ClubsHomeState extends State<ClubsHome> {
               onPressed: () => _onItemTapped(0),
             ),
             IconButton(
-              icon: Icon(
-                _selectedIndex == 1 ? Icons.search : Icons.search_outlined,
-                color: Color(0xFF807373),
-                weight: _selectedIndex == 1 ? 900 : 200,
-              ),
+              icon: _selectedIndex == 1
+                  ? SvgPicture.asset(
+                      'assets/icons/search_filled.svg',
+                      colorFilter: ColorFilter.mode(
+                        Color(0xFF807373),
+                        BlendMode.srcIn,
+                      ),
+                      width: 30,
+                      height: 30,
+                    )
+                  : Icon(Icons.search_outlined, color: Color(0xFF807373)),
               iconSize: 30,
               onPressed: () => _onItemTapped(1),
             ),
