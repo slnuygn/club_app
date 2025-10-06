@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'home.dart';
+import 'search.dart';
+import 'saved.dart';
+import 'profile.dart';
 
 /// Flutter code sample for [BottomNavigationBar].
 
-void main() => runApp(const ClubsApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  runApp(const ClubsApp());
+}
 
 class ClubsApp extends StatelessWidget {
   const ClubsApp({super.key});
@@ -26,15 +36,11 @@ class ClubsHome extends StatefulWidget {
 
 class _ClubsHomeState extends State<ClubsHome> {
   int _selectedIndex = 0;
-  static const TextStyle optionStyle = TextStyle(
-    fontSize: 30,
-    fontWeight: FontWeight.bold,
-  );
-  static const List<Widget> _widgetOptions = <Widget>[
-    Text('Home', style: optionStyle),
-    Text('Search', style: optionStyle),
-    Text('Saved', style: optionStyle),
-    Text('Profile', style: optionStyle),
+  static final List<Widget> _widgetOptions = <Widget>[
+    HomePage(),
+    SearchPage(),
+    SavedPage(),
+    ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -46,6 +52,7 @@ class _ClubsHomeState extends State<ClubsHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Color(0xFF282323),
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
       bottomNavigationBar: Container(
         height: 70,
@@ -58,6 +65,7 @@ class _ClubsHomeState extends State<ClubsHome> {
               icon: Icon(
                 _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
                 color: Color(0xFF807373),
+                weight: _selectedIndex == 0 ? 700 : 100,
               ),
               iconSize: 30,
               onPressed: () => _onItemTapped(0),
@@ -73,7 +81,11 @@ class _ClubsHomeState extends State<ClubsHome> {
                       width: 30,
                       height: 30,
                     )
-                  : Icon(Icons.search_outlined, color: Color(0xFF807373)),
+                  : Icon(
+                      Icons.search_outlined,
+                      color: Color(0xFF807373),
+                      weight: 100,
+                    ),
               iconSize: 30,
               onPressed: () => _onItemTapped(1),
             ),
@@ -81,6 +93,7 @@ class _ClubsHomeState extends State<ClubsHome> {
               icon: Icon(
                 _selectedIndex == 2 ? Icons.bookmark : Icons.bookmark_border,
                 color: Color(0xFF807373),
+                weight: _selectedIndex == 2 ? 700 : 100,
               ),
               iconSize: 30,
               onPressed: () => _onItemTapped(2),
@@ -91,6 +104,7 @@ class _ClubsHomeState extends State<ClubsHome> {
                     ? Icons.person
                     : Icons.person_outline_rounded,
                 color: Color(0xFF807373),
+                weight: _selectedIndex == 3 ? 700 : 100,
               ),
               iconSize: 30,
               onPressed: () => _onItemTapped(3),
