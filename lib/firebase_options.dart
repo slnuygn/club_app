@@ -42,15 +42,6 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAgavPvYfX0Q6deS9UhVsD0JjMXl0xQWJA',
-    appId: '1:354677682673:web:e195d666f06892a1e21450',
-    messagingSenderId: '354677682673',
-    projectId: 'clubs-app-7b3b1',
-    authDomain: 'clubs-app-7b3b1.firebaseapp.com',
-    storageBucket: 'clubs-app-7b3b1.firebasestorage.app',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDRXEHGW3WLNud90u-i7cdQ2hIpLLnPxrg',
     appId: '1:354677682673:android:f56377508a3cc3a2e21450',
@@ -75,14 +66,5 @@ class DefaultFirebaseOptions {
     projectId: 'clubs-app-7b3b1',
     storageBucket: 'clubs-app-7b3b1.firebasestorage.app',
     iosBundleId: 'com.example.clubApp',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyAgavPvYfX0Q6deS9UhVsD0JjMXl0xQWJA',
-    appId: '1:354677682673:web:8c707a518a151c9be21450',
-    messagingSenderId: '354677682673',
-    projectId: 'clubs-app-7b3b1',
-    authDomain: 'clubs-app-7b3b1.firebaseapp.com',
-    storageBucket: 'clubs-app-7b3b1.firebasestorage.app',
   );
 }
