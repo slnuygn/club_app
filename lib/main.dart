@@ -36,12 +36,28 @@ class ClubsHome extends StatefulWidget {
 
 class _ClubsHomeState extends State<ClubsHome> {
   int _selectedIndex = 0;
-  static final List<Widget> _widgetOptions = <Widget>[
+  static const List<Widget> _pages = <Widget>[
     HomePage(),
     SearchPage(),
     SavedPage(),
     ProfilePage(),
   ];
+
+  static const Color _navIconColor = Color(0xFF807373);
+  static const double _navIconSize = 30;
+
+  late final SvgPicture _selectedSearchIcon;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSearchIcon = SvgPicture.asset(
+      'assets/icons/search_filled.svg',
+      colorFilter: const ColorFilter.mode(_navIconColor, BlendMode.srcIn),
+      width: _navIconSize,
+      height: _navIconSize,
+    );
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -52,61 +68,61 @@ class _ClubsHomeState extends State<ClubsHome> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF282323),
-      body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+      backgroundColor: const Color(0xFF282323),
+      body: IndexedStack(index: _selectedIndex, children: _pages),
       bottomNavigationBar: Container(
         height: 70,
-        color: Colors.black, // Changed to black
-        padding: EdgeInsets.only(bottom: 10),
+        color: Colors.black,
+        padding: const EdgeInsets.only(bottom: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              icon: Icon(
-                _selectedIndex == 0 ? Icons.home : Icons.home_outlined,
-                color: Color(0xFF807373),
-                weight: _selectedIndex == 0 ? 700 : 100,
-              ),
-              iconSize: 30,
+              icon: _selectedIndex == 0
+                  ? const Icon(Icons.home, color: _navIconColor, weight: 700)
+                  : const Icon(
+                      Icons.home_outlined,
+                      color: _navIconColor,
+                      weight: 100,
+                    ),
+              iconSize: _navIconSize,
               onPressed: () => _onItemTapped(0),
             ),
             IconButton(
               icon: _selectedIndex == 1
-                  ? SvgPicture.asset(
-                      'assets/icons/search_filled.svg',
-                      colorFilter: ColorFilter.mode(
-                        Color(0xFF807373),
-                        BlendMode.srcIn,
-                      ),
-                      width: 30,
-                      height: 30,
-                    )
-                  : Icon(
+                  ? _selectedSearchIcon
+                  : const Icon(
                       Icons.search_outlined,
-                      color: Color(0xFF807373),
+                      color: _navIconColor,
                       weight: 100,
                     ),
-              iconSize: 30,
+              iconSize: _navIconSize,
               onPressed: () => _onItemTapped(1),
             ),
             IconButton(
-              icon: Icon(
-                _selectedIndex == 2 ? Icons.bookmark : Icons.bookmark_border,
-                color: Color(0xFF807373),
-                weight: _selectedIndex == 2 ? 700 : 100,
-              ),
-              iconSize: 30,
+              icon: _selectedIndex == 2
+                  ? const Icon(
+                      Icons.bookmark,
+                      color: _navIconColor,
+                      weight: 700,
+                    )
+                  : const Icon(
+                      Icons.bookmark_border,
+                      color: _navIconColor,
+                      weight: 100,
+                    ),
+              iconSize: _navIconSize,
               onPressed: () => _onItemTapped(2),
             ),
             IconButton(
-              icon: Icon(
-                _selectedIndex == 3
-                    ? Icons.person
-                    : Icons.person_outline_rounded,
-                color: Color(0xFF807373),
-                weight: _selectedIndex == 3 ? 700 : 100,
-              ),
-              iconSize: 30,
+              icon: _selectedIndex == 3
+                  ? const Icon(Icons.person, color: _navIconColor, weight: 700)
+                  : const Icon(
+                      Icons.person_outline_rounded,
+                      color: _navIconColor,
+                      weight: 100,
+                    ),
+              iconSize: _navIconSize,
               onPressed: () => _onItemTapped(3),
             ),
           ],

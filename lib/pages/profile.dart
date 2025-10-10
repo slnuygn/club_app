@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
-class HomePage extends StatelessWidget {
+class ProfilePage extends StatelessWidget {
+  const ProfilePage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Text(
-        'Home Page',
+        'Pasdasdasda Page',
         style: TextStyle(
           fontSize: 30,
           fontWeight: FontWeight.bold,
