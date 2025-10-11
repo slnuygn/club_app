@@ -209,3 +209,41 @@ class PostShowcase extends StatelessWidget {
     );
   }
 }
+
+/// A reusable indicator row that renders concentric dots to highlight the
+/// currently visible showcase entry.
+class PostShowcaseIndicator extends StatelessWidget {
+  const PostShowcaseIndicator({
+    super.key,
+    required this.count,
+    required this.activeIndex,
+  });
+
+  final int count;
+  final int activeIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (int index) {
+        final bool isActive = index == activeIndex;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const CircleAvatar(radius: 5, backgroundColor: Color(0xFF1B1B1B)),
+              CircleAvatar(
+                radius: 3,
+                backgroundColor: isActive
+                    ? const Color(0xFF807373)
+                    : const Color(0xFF1B1B1B),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+}

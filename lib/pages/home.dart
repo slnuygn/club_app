@@ -76,30 +76,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Widget _buildIndicatorDots() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(_posts.length, (int index) {
-        final bool isActive = index == _currentIndex;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const CircleAvatar(radius: 5, backgroundColor: Color(0xFF1B1B1B)),
-              CircleAvatar(
-                radius: 3,
-                backgroundColor: isActive
-                    ? const Color(0xFF807373)
-                    : const Color(0xFF1B1B1B),
-              ),
-            ],
-          ),
-        );
-      }),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,14 +105,17 @@ class _HomePageState extends State<HomePage> {
                 imageHeight: _imageHeight,
               ),
               const SizedBox(height: 12),
-              _buildIndicatorDots(),
-              const SizedBox(height: 1),
+              PostShowcaseIndicator(
+                count: _posts.length,
+                activeIndex: _currentIndex,
+              ),
               const Text(
                 "Popular events",
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
+                  height: 1,
                 ),
               ),
             ],
