@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/post.dart';
 import '../widgets/post_showcase.dart';
 
 class HomePage extends StatefulWidget {
@@ -80,10 +81,9 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF282323),
-      body: Align(
-        alignment: Alignment.topLeft,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -118,6 +118,12 @@ class _HomePageState extends State<HomePage> {
                   height: 1,
                 ),
               ),
+              const SizedBox(height: 12),
+              const PostCard(),
+              const SizedBox(height: 12),
+              const PostCard(),
+              const SizedBox(height: 12),
+              const PostCard(),
             ],
           ),
         ),
