@@ -141,11 +141,10 @@ class PostShowcase extends StatelessWidget {
                                 const TextSpan(
                                   text: ' Read More',
                                   style: TextStyle(
-                                    color: Colors.blue,
+                                    color: const Color(0xFF007D99),
                                     fontSize: 12,
                                     height: 1.1,
                                     fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
                                   ),
                                 ),
                               ],
