@@ -44,6 +44,36 @@ class _HomePageState extends State<HomePage> {
   ];
 
   final Set<int> _favoriteIndices = <int>{};
+  final Set<int> _popularFavoriteIndices = <int>{};
+  final List<PostCardData> _popularPosts = const [
+    PostCardData(
+      communityName: 'Weekend Explorers',
+      communityAvatarUrl: 'https://picsum.photos/seed/popular_avatar1/120',
+      location: 'Sunset Point Overlook',
+      caption:
+          'Sunset hike to the ridge followed by stargazing with astronomy club members. Bring water and a light jacket.',
+      dateDisplay: 'Oct 19, 2025 · 5:00 PM',
+      imageUrl: 'https://picsum.photos/seed/popular_image1/400/200',
+    ),
+    PostCardData(
+      communityName: 'Campus Foodies',
+      communityAvatarUrl: 'https://picsum.photos/seed/popular_avatar2/120',
+      location: 'Main Quad, Booth 7',
+      caption:
+          'Taste dishes from student chefs across campus. Vote for your favorite plate and win café vouchers.',
+      dateDisplay: 'Oct 20, 2025 · 12:00 PM',
+      imageUrl: 'https://picsum.photos/seed/popular_image2/400/200',
+    ),
+    PostCardData(
+      communityName: 'Makers Collective',
+      communityAvatarUrl: 'https://picsum.photos/seed/popular_avatar3/120',
+      location: 'Innovation Lab, Room 204',
+      caption:
+          'Drop-in woodworking workshop covering safe tool use and a quick planter build you can take home.',
+      dateDisplay: 'Oct 22, 2025 · 3:30 PM',
+      imageUrl: 'https://picsum.photos/seed/popular_image3/400/200',
+    ),
+  ];
   int _currentIndex = 0;
 
   void _toggleFavorite(int index) {
@@ -52,6 +82,16 @@ class _HomePageState extends State<HomePage> {
         _favoriteIndices.remove(index);
       } else {
         _favoriteIndices.add(index);
+      }
+    });
+  }
+
+  void _togglePopularFavorite(int index) {
+    setState(() {
+      if (_popularFavoriteIndices.contains(index)) {
+        _popularFavoriteIndices.remove(index);
+      } else {
+        _popularFavoriteIndices.add(index);
       }
     });
   }
@@ -119,11 +159,19 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 12),
-              const PostCard(),
-              const SizedBox(height: 12),
-              const PostCard(),
-              const SizedBox(height: 12),
-              const PostCard(),
+              ..._popularPosts.asMap().entries.map((
+                MapEntry<int, PostCardData> entry,
+              ) {
+                final bool isLast = entry.key == _popularPosts.length - 1;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                  child: PostCard(
+                    data: entry.value,
+                    isFavorite: _popularFavoriteIndices.contains(entry.key),
+                    onFavoriteToggle: () => _togglePopularFavorite(entry.key),
+                  ),
+                );
+              }),
             ],
           ),
         ),

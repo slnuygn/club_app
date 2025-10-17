@@ -96,7 +96,7 @@ class PostShowcase extends StatelessWidget {
               child: Container(
                 constraints: BoxConstraints(minHeight: overlayHeight),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.7),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(6),
                     bottomRight: Radius.circular(6),
@@ -158,14 +158,15 @@ class PostShowcase extends StatelessWidget {
                               const Icon(
                                 Icons.access_time,
                                 size: 14,
-                                color: Colors.white60,
+                                color: Colors.redAccent,
                               ),
                               const SizedBox(width: 1),
                               Text(
                                 data.dateDisplay,
                                 style: const TextStyle(
-                                  color: Colors.white70,
+                                  color: Colors.redAccent,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               const SizedBox(width: 4),

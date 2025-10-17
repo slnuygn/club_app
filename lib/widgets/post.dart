@@ -1,23 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:readmore/readmore.dart';
 
+/// Encapsulates the mutable content for a post card so callers can render
+/// multiple cards by supplying only post-specific data.
+class PostCardData {
+  const PostCardData({
+    required this.communityName,
+    required this.communityAvatarUrl,
+    required this.location,
+    required this.caption,
+    required this.dateDisplay,
+    required this.imageUrl,
+  });
+
+  final String communityName;
+  final String communityAvatarUrl;
+  final String location;
+  final String caption;
+  final String dateDisplay;
+  final String imageUrl;
+}
+
 class PostCard extends StatefulWidget {
   const PostCard({
     super.key,
-    this.child,
-    this.caption,
+    required this.data,
     this.isFavorite = false,
     this.onFavoriteToggle,
-    this.avatarUrl,
-    this.backgroundImageUrl,
   });
 
-  final Widget? child;
-  final String? caption;
+  final PostCardData data;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
-  final String? avatarUrl;
-  final String? backgroundImageUrl;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -42,14 +56,8 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    const String defaultCaption =
-        'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do a eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.';
-    final String displayCaption = widget.caption ?? defaultCaption;
-
-    final double avatarRadius = 26; // Larger visible size
-
-    // Generate random avatar
-    final String randomAvatarUrl = 'https://picsum.photos/200/200';
+    final double avatarRadius = 26;
+    final String displayCaption = widget.data.caption;
 
     return Container(
       width: double.infinity,
@@ -69,7 +77,9 @@ class _PostCardState extends State<PostCard> {
                 children: [
                   CircleAvatar(
                     radius: avatarRadius,
-                    backgroundImage: NetworkImage(randomAvatarUrl),
+                    backgroundImage: NetworkImage(
+                      widget.data.communityAvatarUrl,
+                    ),
                     backgroundColor: Colors.white,
                   ),
                   const SizedBox(width: 8),
@@ -78,7 +88,7 @@ class _PostCardState extends State<PostCard> {
                     children: [
                       RichText(
                         text: TextSpan(
-                          text: 'Dummy Community',
+                          text: widget.data.communityName,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -108,9 +118,9 @@ class _PostCardState extends State<PostCard> {
                               size: 15,
                             ),
                             const SizedBox(width: 1),
-                            const Text(
-                              'Dummy Location',
-                              style: TextStyle(
+                            Text(
+                              widget.data.location,
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 14,
                               ),
@@ -156,7 +166,7 @@ class _PostCardState extends State<PostCard> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(3),
                 child: Image.network(
-                  'https://picsum.photos/400/200',
+                  widget.data.imageUrl,
                   height: 150,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -173,9 +183,12 @@ class _PostCardState extends State<PostCard> {
                         size: 16,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        '16 Oct 2023, 10:00 AM',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      Text(
+                        widget.data.dateDisplay,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
@@ -209,13 +222,6 @@ class _PostCardState extends State<PostCard> {
               ),
             ],
           ),
-          if (widget.backgroundImageUrl != null)
-            Positioned.fill(
-              child: Image.network(
-                widget.backgroundImageUrl!,
-                fit: BoxFit.cover,
-              ),
-            ),
           Positioned(
             top: 8,
             right: 8,
