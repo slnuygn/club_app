@@ -5,13 +5,19 @@ class SavedPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Saved Page',
-        style: TextStyle(
-          fontSize: 30,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+    return Scaffold(
+      backgroundColor: Color(0xFF282323),
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(left: 10, top: 1),
+          child: Text(
+            'My events',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
         ),
       ),
     );
