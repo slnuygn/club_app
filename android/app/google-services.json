@@ -12,7 +12,20 @@
           "package_name": "com.example.club_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "354677682673-e1a20ul5u3680pumpob0k8g1ds43m8a3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.club_app",
+            "certificate_hash": "d718819fdcff439872adf5cad2b5b619ca444e82"
+          }
+        },
+        {
+          "client_id": "354677682673-kfa5uk51cacb337hopnq4r7td9nu5suh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDRXEHGW3WLNud90u-i7cdQ2hIpLLnPxrg"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "354677682673-kfa5uk51cacb337hopnq4r7td9nu5suh.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "354677682673-ai32tfaerlrcvdj8u79bj6dmm9p245ps.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.clubApp"
+              }
+            }
+          ]
         }
       }
     }
