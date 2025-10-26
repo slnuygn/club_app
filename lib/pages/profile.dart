@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'login.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -12,7 +13,11 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   Future<void> _logout() async {
     try {
+      // Sign out from Google Sign-In first
+      await GoogleSignIn().signOut();
+      // Then sign out from Firebase
       await FirebaseAuth.instance.signOut();
+
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const LoginPage()),
