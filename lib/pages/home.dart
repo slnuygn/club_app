@@ -21,6 +21,7 @@ class _HomePageState extends State<HomePage> {
   final Set<int> _popularFavoriteIndices = <int>{};
   List<PostCardData> _popularPosts = [];
   int _currentIndex = 0;
+  bool _isLoading = true;
 
   final PostService _postService = PostService();
 
@@ -30,37 +31,62 @@ class _HomePageState extends State<HomePage> {
     _fetchPostData();
   }
 
-  void _fetchPostData() async {
+  Future<void> _fetchPostData() async {
     try {
-      final data = await _postService.getPostAndClub('t0sDJPIpfdmo04lQOp0P');
-      final Post post = data['post'];
-      final Club club = data['club'];
+      final allPostsData = await _postService.getAllPosts();
 
-      final postShowcaseData = PostShowcaseData(
-        backgroundImageUrl: post.photoURL,
-        communityAvatarUrl: club.photoUrl,
-        communityName: club.name,
-        postCaption: post.postCaption,
-        dateDisplay: DateFormat('MMM d, yyyy · h:mm a').format(post.eventDate),
-        placeDisplay: post.eventLocationURL,
-      );
+      final List<PostShowcaseData> showcasePosts = [];
+      final List<PostCardData> popularPosts = [];
 
-      final postCardData = PostCardData(
-        communityName: club.name,
-        communityAvatarUrl: club.photoUrl,
-        location: post.eventLocationURL,
-        caption: post.postCaption,
-        dateDisplay: DateFormat('MMM d, yyyy · h:mm a').format(post.eventDate),
-        imageUrl: post.photoURL,
-      );
+      for (var data in allPostsData) {
+        final Post post = data['post'];
+        final Club club = data['club'];
+
+        final postShowcaseData = PostShowcaseData(
+          backgroundImageUrl: post.photoURL,
+          communityAvatarUrl: club.photoUrl,
+          communityName: club.name,
+          postCaption: post.postCaption,
+          dateDisplay: DateFormat(
+            'MMM d, yyyy · h:mm a',
+          ).format(post.eventDate),
+          placeDisplay: post.eventLocationURL,
+        );
+
+        final postCardData = PostCardData(
+          communityName: club.name,
+          communityAvatarUrl: club.photoUrl,
+          location: post.eventLocationURL,
+          caption: post.postCaption,
+          dateDisplay: DateFormat(
+            'MMM d, yyyy · h:mm a',
+          ).format(post.eventDate),
+          imageUrl: post.photoURL,
+        );
+
+        showcasePosts.add(postShowcaseData);
+        popularPosts.add(postCardData);
+      }
 
       setState(() {
-        _posts = [postShowcaseData];
-        _popularPosts = [postCardData];
+        _posts = showcasePosts;
+        _popularPosts = popularPosts;
+        _isLoading = false;
       });
     } catch (e) {
       // Handle error
       print('Error fetching post data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading posts: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -110,64 +136,102 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF282323),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
-          child: _posts.isEmpty
-              ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            : _posts.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text(
-                      "Today's events",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                      'No posts available yet',
+                      style: TextStyle(color: Colors.white, fontSize: 18),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton.icon(
+                      onPressed: _fetchPostData,
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                      label: const Text(
+                        'Refresh',
+                        style: TextStyle(color: Colors.white),
                       ),
-                    ),
-                    const SizedBox(height: 1),
-                    PostShowcase(
-                      data: _posts[_currentIndex],
-                      isFavorite: _favoriteIndices.contains(_currentIndex),
-                      onFavoriteToggle: () => _toggleFavorite(_currentIndex),
-                      onPrevious: _showPrevious,
-                      onNext: _showNext,
-                      imageHeight: _imageHeight,
-                    ),
-                    const SizedBox(height: 12),
-                    PostShowcaseIndicator(
-                      count: _posts.length,
-                      activeIndex: _currentIndex,
-                    ),
-                    const Text(
-                      "Popular events",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    ..._popularPosts.asMap().entries.map((
-                      MapEntry<int, PostCardData> entry,
-                    ) {
-                      final bool isLast = entry.key == _popularPosts.length - 1;
-                      return Padding(
-                        padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                        child: PostCard(
-                          data: entry.value,
-                          isFavorite: _popularFavoriteIndices.contains(
-                            entry.key,
-                          ),
-                          onFavoriteToggle: () =>
-                              _togglePopularFavorite(entry.key),
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
                         ),
-                      );
-                    }),
+                      ),
+                    ),
                   ],
                 ),
-        ),
+              )
+            : RefreshIndicator(
+                onRefresh: () async {
+                  await _fetchPostData();
+                },
+                color: Colors.blueAccent,
+                backgroundColor: const Color(0xFF282323),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Today's events",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 1),
+                      PostShowcase(
+                        data: _posts[_currentIndex],
+                        isFavorite: _favoriteIndices.contains(_currentIndex),
+                        onFavoriteToggle: () => _toggleFavorite(_currentIndex),
+                        onPrevious: _showPrevious,
+                        onNext: _showNext,
+                        imageHeight: _imageHeight,
+                      ),
+                      const SizedBox(height: 12),
+                      PostShowcaseIndicator(
+                        count: _posts.length,
+                        activeIndex: _currentIndex,
+                      ),
+                      const Text(
+                        "Popular events",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          height: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ..._popularPosts.asMap().entries.map((
+                        MapEntry<int, PostCardData> entry,
+                      ) {
+                        final bool isLast =
+                            entry.key == _popularPosts.length - 1;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                          child: PostCard(
+                            data: entry.value,
+                            isFavorite: _popularFavoriteIndices.contains(
+                              entry.key,
+                            ),
+                            onFavoriteToggle: () =>
+                                _togglePopularFavorite(entry.key),
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }

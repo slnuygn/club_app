@@ -69,4 +69,38 @@ class PostService {
     Club club = await getClub(post.clubId);
     return {'post': post, 'club': club};
   }
+
+  Future<List<Map<String, dynamic>>> getAllPosts() async {
+    try {
+      // Get all posts from Firestore
+      QuerySnapshot postsSnapshot = await _firestore
+          .collection('posts')
+          .orderBy('event_date', descending: false)
+          .get();
+
+      List<Map<String, dynamic>> allPostsData = [];
+
+      for (var postDoc in postsSnapshot.docs) {
+        final postData = postDoc.data() as Map<String, dynamic>;
+
+        // Convert gs:// URL to HTTPS for photo
+        if (postData['photo_URL'] != null &&
+            postData['photo_URL'].startsWith('gs://')) {
+          postData['photo_URL'] = await _convertGsUrlToHttps(
+            postData['photo_URL'],
+          );
+        }
+
+        final Post post = Post.fromFirestore(postData);
+        final Club club = await getClub(post.clubId);
+
+        allPostsData.add({'post': post, 'club': club});
+      }
+
+      return allPostsData;
+    } catch (e) {
+      print('Error fetching all posts: $e');
+      rethrow;
+    }
+  }
 }
