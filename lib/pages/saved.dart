@@ -171,6 +171,7 @@ class _SavedPageState extends State<SavedPage> {
                 color: Colors.blueAccent,
                 backgroundColor: const Color(0xFF282323),
                 child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,6 +193,11 @@ class _SavedPageState extends State<SavedPage> {
                         final String postId = entry.value['postId'];
                         final bool isLast = entry.key == _likedPosts.length - 1;
 
+                        // Check if the event is outdated by more than 2 hours
+                        final now = DateTime.now();
+                        final timeDifference = now.difference(post.eventDate);
+                        final isOutdated = timeDifference.inHours >= 2;
+
                         final postCardData = PostCardData(
                           communityName: club.name,
                           communityAvatarUrl: club.photoUrl,
@@ -205,10 +211,13 @@ class _SavedPageState extends State<SavedPage> {
 
                         return Padding(
                           padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                          child: PostCard(
-                            data: postCardData,
-                            isFavorite: true,
-                            onFavoriteToggle: () => _toggleLike(postId),
+                          child: Opacity(
+                            opacity: isOutdated ? 0.5 : 1.0,
+                            child: PostCard(
+                              data: postCardData,
+                              isFavorite: true,
+                              onFavoriteToggle: () => _toggleLike(postId),
+                            ),
                           ),
                         );
                       }),
