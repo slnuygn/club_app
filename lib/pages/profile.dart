@@ -114,8 +114,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-
     return Scaffold(
       backgroundColor: const Color(0xFF282323),
       body: _isLoading
@@ -126,50 +124,22 @@ class _ProfilePageState extends State<ProfilePage> {
               backgroundColor: const Color(0xFF807373),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 60),
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[800],
-                      backgroundImage: user?.photoURL != null
-                          ? NetworkImage(user!.photoURL!)
-                          : null,
-                      child: user?.photoURL == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    if (user?.displayName != null)
-                      Text(
-                        user!.displayName!,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          color: Colors.white,
-                        ),
-                      ),
-                    const SizedBox(height: 32),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 8.0),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "My Clubs",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "My Clubs",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 1),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),

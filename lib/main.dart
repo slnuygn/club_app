@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'pages/login.dart';
 import 'pages/home.dart';
@@ -72,6 +73,7 @@ class _ClubsHomeState extends State<ClubsHome> {
         selectedIndex: _selectedIndex,
         onItemTapped: _onItemTapped,
         selectedSearchIcon: _selectedSearchIcon,
+        user: FirebaseAuth.instance.currentUser,
       ),
     );
   }

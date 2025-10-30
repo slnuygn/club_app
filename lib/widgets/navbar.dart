@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 const navBarIconColor = Color(0xFF807373);
 const double navBarIconSize = 30;
@@ -9,11 +10,13 @@ class NavBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onItemTapped,
     required this.selectedSearchIcon,
+    required this.user,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onItemTapped;
   final Widget selectedSearchIcon;
+  final User? user;
 
   static const double _containerHeight = 70;
 
@@ -33,22 +36,12 @@ class NavBar extends StatelessWidget {
     weight: 100,
   );
   static const Icon _bookmarkFilled = Icon(
-    Icons.bookmark,
+    Icons.favorite,
     color: navBarIconColor,
     weight: 700,
   );
   static const Icon _bookmarkOutlined = Icon(
-    Icons.bookmark_border,
-    color: navBarIconColor,
-    weight: 100,
-  );
-  static const Icon _personFilled = Icon(
-    Icons.person,
-    color: navBarIconColor,
-    weight: 700,
-  );
-  static const Icon _personOutlined = Icon(
-    Icons.person_outline_rounded,
+    Icons.favorite_border,
     color: navBarIconColor,
     weight: 100,
   );
@@ -77,10 +70,28 @@ class NavBar extends StatelessWidget {
             iconSize: navBarIconSize,
             onPressed: () => onItemTapped(2),
           ),
-          IconButton(
-            icon: selectedIndex == 3 ? _personFilled : _personOutlined,
-            iconSize: navBarIconSize,
-            onPressed: () => onItemTapped(3),
+          GestureDetector(
+            onTap: () => onItemTapped(3),
+            child: Container(
+              width: navBarIconSize,
+              height: navBarIconSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: selectedIndex == 3
+                    ? Border.all(color: navBarIconColor, width: 2)
+                    : null,
+              ),
+              child: CircleAvatar(
+                radius: navBarIconSize / 2,
+                backgroundColor: Colors.grey[800],
+                backgroundImage: user?.photoURL != null
+                    ? NetworkImage(user!.photoURL!)
+                    : null,
+                child: user?.photoURL == null
+                    ? const Icon(Icons.person, color: navBarIconColor, size: 20)
+                    : null,
+              ),
+            ),
           ),
         ],
       ),
