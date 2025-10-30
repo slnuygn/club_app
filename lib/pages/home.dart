@@ -18,7 +18,8 @@ class _HomePageState extends State<HomePage> {
   static const double _imageHeight = 180;
 
   List<PostShowcaseData> _posts = [];
-  List<String> _postIds = []; // Store post IDs
+  List<String> _showcasePostIds = []; // Store showcase post IDs separately
+  List<String> _postIds = []; // Store all post IDs
   final Set<String> _likedPostIds = <String>{}; // Changed to store post IDs
   List<PostCardData> _popularPosts = [];
   int _currentIndex = 0;
@@ -48,13 +49,29 @@ class _HomePageState extends State<HomePage> {
       final allPostsData = await _postService.getAllPosts();
 
       final List<PostShowcaseData> showcasePosts = [];
+      final List<String> showcasePostIds = []; // Separate list for showcase IDs
       final List<PostCardData> popularPosts = [];
       final List<String> postIds = [];
+
+      // Get today's date (without time component)
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
 
       for (var data in allPostsData) {
         final Post post = data['post'];
         final Club club = data['club'];
         final String postId = data['postId']; // Get the post ID
+
+        // Get post event date (without time component)
+        final eventDate = post.eventDate;
+        final eventDay = DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+        );
+
+        // Check if the event is today
+        final isToday = eventDay.isAtSameMomentAs(today);
 
         final postShowcaseData = PostShowcaseData(
           backgroundImageUrl: post.photoURL,
@@ -78,13 +95,20 @@ class _HomePageState extends State<HomePage> {
           imageUrl: post.photoURL,
         );
 
-        showcasePosts.add(postShowcaseData);
+        // Only add to showcase if event is today
+        if (isToday) {
+          showcasePosts.add(postShowcaseData);
+          showcasePostIds.add(postId);
+        }
+
+        // All posts go to popular section
         popularPosts.add(postCardData);
         postIds.add(postId);
       }
 
       setState(() {
         _posts = showcasePosts;
+        _showcasePostIds = showcasePostIds;
         _popularPosts = popularPosts;
         _postIds = postIds;
         _likedPostIds.clear();
@@ -109,6 +133,46 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _toggleFavorite(int index) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || index >= _showcasePostIds.length) return;
+
+    final postId = _showcasePostIds[index];
+    final isCurrentlyLiked = _likedPostIds.contains(postId);
+
+    // Optimistically update UI
+    setState(() {
+      if (isCurrentlyLiked) {
+        _likedPostIds.remove(postId);
+      } else {
+        _likedPostIds.add(postId);
+      }
+    });
+
+    try {
+      // Update Firestore
+      await _postService.toggleLikePost(user.uid, postId, isCurrentlyLiked);
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        if (isCurrentlyLiked) {
+          _likedPostIds.add(postId);
+        } else {
+          _likedPostIds.remove(postId);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating like: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _togglePopularFavorite(int index) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || index >= _postIds.length) return;
 
@@ -148,10 +212,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _togglePopularFavorite(int index) async {
-    await _toggleFavorite(index); // Use the same logic
-  }
-
   void _showPrevious() {
     if (_posts.isEmpty) {
       return;
@@ -182,7 +242,7 @@ class _HomePageState extends State<HomePage> {
             ? const Center(
                 child: CircularProgressIndicator(color: Colors.white),
               )
-            : _posts.isEmpty
+            : _popularPosts.isEmpty
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -221,30 +281,37 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Today's events",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      // Only show "Today's events" section if there are events today
+                      if (_posts.isNotEmpty) ...[
+                        const Text(
+                          "Today's events",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 1),
-                      PostShowcase(
-                        data: _posts[_currentIndex],
-                        isFavorite: _likedPostIds.contains(
-                          _postIds.isNotEmpty ? _postIds[_currentIndex] : '',
+                        const SizedBox(height: 1),
+                        PostShowcase(
+                          data: _posts[_currentIndex],
+                          isFavorite: _likedPostIds.contains(
+                            _showcasePostIds.isNotEmpty
+                                ? _showcasePostIds[_currentIndex]
+                                : '',
+                          ),
+                          onFavoriteToggle: () =>
+                              _toggleFavorite(_currentIndex),
+                          onPrevious: _showPrevious,
+                          onNext: _showNext,
+                          imageHeight: _imageHeight,
                         ),
-                        onFavoriteToggle: () => _toggleFavorite(_currentIndex),
-                        onPrevious: _showPrevious,
-                        onNext: _showNext,
-                        imageHeight: _imageHeight,
-                      ),
-                      const SizedBox(height: 12),
-                      PostShowcaseIndicator(
-                        count: _posts.length,
-                        activeIndex: _currentIndex,
-                      ),
+                        const SizedBox(height: 12),
+                        PostShowcaseIndicator(
+                          count: _posts.length,
+                          activeIndex: _currentIndex,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       const Text(
                         "Popular events",
                         style: TextStyle(
