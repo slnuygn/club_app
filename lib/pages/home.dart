@@ -1,4 +1,5 @@
 import 'package:club_app/services/post_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,8 +18,8 @@ class _HomePageState extends State<HomePage> {
   static const double _imageHeight = 180;
 
   List<PostShowcaseData> _posts = [];
-  final Set<int> _favoriteIndices = <int>{};
-  final Set<int> _popularFavoriteIndices = <int>{};
+  List<String> _postIds = []; // Store post IDs
+  final Set<String> _likedPostIds = <String>{}; // Changed to store post IDs
   List<PostCardData> _popularPosts = [];
   int _currentIndex = 0;
   bool _isLoading = true;
@@ -33,14 +34,27 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _fetchPostData() async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Fetch user's liked posts
+      final likedPosts = await _postService.getUserLikedPosts(user.uid);
+
       final allPostsData = await _postService.getAllPosts();
 
       final List<PostShowcaseData> showcasePosts = [];
       final List<PostCardData> popularPosts = [];
+      final List<String> postIds = [];
 
       for (var data in allPostsData) {
         final Post post = data['post'];
         final Club club = data['club'];
+        final String postId = data['postId']; // Get the post ID
 
         final postShowcaseData = PostShowcaseData(
           backgroundImageUrl: post.photoURL,
@@ -66,11 +80,15 @@ class _HomePageState extends State<HomePage> {
 
         showcasePosts.add(postShowcaseData);
         popularPosts.add(postCardData);
+        postIds.add(postId);
       }
 
       setState(() {
         _posts = showcasePosts;
         _popularPosts = popularPosts;
+        _postIds = postIds;
+        _likedPostIds.clear();
+        _likedPostIds.addAll(likedPosts);
         _isLoading = false;
       });
     } catch (e) {
@@ -90,24 +108,48 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _toggleFavorite(int index) {
+  Future<void> _toggleFavorite(int index) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || index >= _postIds.length) return;
+
+    final postId = _postIds[index];
+    final isCurrentlyLiked = _likedPostIds.contains(postId);
+
+    // Optimistically update UI
     setState(() {
-      if (_favoriteIndices.contains(index)) {
-        _favoriteIndices.remove(index);
+      if (isCurrentlyLiked) {
+        _likedPostIds.remove(postId);
       } else {
-        _favoriteIndices.add(index);
+        _likedPostIds.add(postId);
       }
     });
+
+    try {
+      // Update Firestore
+      await _postService.toggleLikePost(user.uid, postId, isCurrentlyLiked);
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        if (isCurrentlyLiked) {
+          _likedPostIds.add(postId);
+        } else {
+          _likedPostIds.remove(postId);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating like: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
-  void _togglePopularFavorite(int index) {
-    setState(() {
-      if (_popularFavoriteIndices.contains(index)) {
-        _popularFavoriteIndices.remove(index);
-      } else {
-        _popularFavoriteIndices.add(index);
-      }
-    });
+  Future<void> _togglePopularFavorite(int index) async {
+    await _toggleFavorite(index); // Use the same logic
   }
 
   void _showPrevious() {
@@ -190,7 +232,9 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 1),
                       PostShowcase(
                         data: _posts[_currentIndex],
-                        isFavorite: _favoriteIndices.contains(_currentIndex),
+                        isFavorite: _likedPostIds.contains(
+                          _postIds.isNotEmpty ? _postIds[_currentIndex] : '',
+                        ),
                         onFavoriteToggle: () => _toggleFavorite(_currentIndex),
                         onPrevious: _showPrevious,
                         onNext: _showNext,
@@ -220,8 +264,10 @@ class _HomePageState extends State<HomePage> {
                           padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
                           child: PostCard(
                             data: entry.value,
-                            isFavorite: _popularFavoriteIndices.contains(
-                              entry.key,
+                            isFavorite: _likedPostIds.contains(
+                              entry.key < _postIds.length
+                                  ? _postIds[entry.key]
+                                  : '',
                             ),
                             onFavoriteToggle: () =>
                                 _togglePopularFavorite(entry.key),

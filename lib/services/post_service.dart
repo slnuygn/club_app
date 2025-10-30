@@ -94,12 +94,88 @@ class PostService {
         final Post post = Post.fromFirestore(postData);
         final Club club = await getClub(post.clubId);
 
-        allPostsData.add({'post': post, 'club': club});
+        allPostsData.add({
+          'post': post,
+          'club': club,
+          'postId': postDoc.id, // Include the document ID
+        });
       }
 
       return allPostsData;
     } catch (e) {
       print('Error fetching all posts: $e');
+      rethrow;
+    }
+  }
+
+  // Get user's liked posts
+  Future<List<String>> getUserLikedPosts(String userId) async {
+    try {
+      DocumentSnapshot userDoc = await _firestore
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!userDoc.exists) {
+        return [];
+      }
+
+      final data = userDoc.data() as Map<String, dynamic>?;
+      if (data == null || !data.containsKey('liked_posts')) {
+        return [];
+      }
+
+      final likedPosts = data['liked_posts'] as List<dynamic>?;
+      return likedPosts?.cast<String>() ?? [];
+    } catch (e) {
+      print('Error fetching liked posts: $e');
+      return [];
+    }
+  }
+
+  // Toggle like status for a post
+  Future<void> toggleLikePost(
+    String userId,
+    String postId,
+    bool isLiked,
+  ) async {
+    try {
+      final userRef = _firestore.collection('users').doc(userId);
+
+      // First, ensure the document and field exist
+      final userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        throw Exception('User document does not exist');
+      }
+
+      final userData = userDoc.data();
+
+      // If liked_posts field doesn't exist, initialize it
+      if (userData == null || !userData.containsKey('liked_posts')) {
+        // Only add the post if we're liking it (isLiked = false means we're adding)
+        if (!isLiked) {
+          await userRef.set({
+            'liked_posts': [postId],
+          }, SetOptions(merge: true));
+        }
+        // If isLiked = true and field doesn't exist, nothing to remove
+        return;
+      }
+
+      if (isLiked) {
+        // Remove from liked posts
+        await userRef.update({
+          'liked_posts': FieldValue.arrayRemove([postId]),
+        });
+      } else {
+        // Add to liked posts
+        await userRef.update({
+          'liked_posts': FieldValue.arrayUnion([postId]),
+        });
+      }
+    } catch (e) {
+      print('Error toggling like: $e');
       rethrow;
     }
   }
