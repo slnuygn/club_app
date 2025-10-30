@@ -18,6 +18,7 @@ class _ProfilePageState extends State<ProfilePage> {
   final PostService _postService = PostService();
   String? _clubKey;
   bool _isLoading = true;
+  List<String> _followingClubs = [];
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
           final data = userDoc.data();
           setState(() {
             _clubKey = data?['club_key'];
+            _followingClubs = List<String>.from(data?['following_clubs'] ?? []);
             _isLoading = false;
           });
         } else {
@@ -103,19 +105,186 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<void> _refreshData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await _fetchUserData();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: const Color(0xFF282323),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : const Center(
-              child: Text(
-                'Pasdasdasda Page',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+          : RefreshIndicator(
+              onRefresh: _refreshData,
+              color: Colors.white,
+              backgroundColor: const Color(0xFF807373),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 60),
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[800],
+                      backgroundImage: user?.photoURL != null
+                          ? NetworkImage(user!.photoURL!)
+                          : null,
+                      child: user?.photoURL == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 60,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    if (user?.displayName != null)
+                      Text(
+                        user!.displayName!,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          color: Colors.white,
+                        ),
+                      ),
+                    const SizedBox(height: 32),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 8.0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          "My Clubs",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B1B1B),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: _followingClubs.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  'No clubs followed yet',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              )
+                            : Wrap(
+                                spacing: 16,
+                                runSpacing: 16,
+                                children: _followingClubs
+                                    .where((clubId) => clubId.isNotEmpty)
+                                    .map((clubId) {
+                                      return FutureBuilder(
+                                        future: _postService.getClub(clubId),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState ==
+                                              ConnectionState.waiting) {
+                                            return const SizedBox(
+                                              width: 80,
+                                              child: Column(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 30,
+                                                    backgroundColor:
+                                                        Colors.grey,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          color: Colors.white,
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }
+                                          if (snapshot.hasError) {
+                                            return const SizedBox(
+                                              width: 80,
+                                              child: Column(
+                                                children: [
+                                                  CircleAvatar(
+                                                    radius: 30,
+                                                    backgroundColor:
+                                                        Colors.grey,
+                                                    child: Icon(
+                                                      Icons.error,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }
+                                          if (!snapshot.hasData) {
+                                            return const SizedBox.shrink();
+                                          }
+
+                                          final club = snapshot.data!;
+                                          return SizedBox(
+                                            width: 80,
+                                            child: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                CircleAvatar(
+                                                  radius: 45,
+                                                  backgroundColor:
+                                                      Colors.grey[800],
+                                                  backgroundImage:
+                                                      club.photoUrl.isNotEmpty
+                                                      ? NetworkImage(
+                                                          club.photoUrl,
+                                                        )
+                                                      : null,
+                                                  child: club.photoUrl.isEmpty
+                                                      ? const Icon(
+                                                          Icons.group,
+                                                          size: 45,
+                                                          color: Colors.white,
+                                                        )
+                                                      : null,
+                                                ),
+                                                const SizedBox(height: 1),
+                                                Text(
+                                                  club.name,
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 14,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    })
+                                    .toList(),
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

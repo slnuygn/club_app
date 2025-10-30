@@ -11,6 +11,7 @@ class PostCardData {
     required this.caption,
     required this.dateDisplay,
     required this.imageUrl,
+    required this.clubId,
   });
 
   final String communityName;
@@ -19,6 +20,7 @@ class PostCardData {
   final String caption;
   final String dateDisplay;
   final String imageUrl;
+  final String clubId;
 }
 
 class PostCard extends StatefulWidget {
@@ -27,11 +29,15 @@ class PostCard extends StatefulWidget {
     required this.data,
     this.isFavorite = false,
     this.onFavoriteToggle,
+    this.isFollowing = false,
+    this.onFollowToggle,
   });
 
   final PostCardData data;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
+  final bool isFollowing;
+  final VoidCallback? onFollowToggle;
 
   @override
   State<PostCard> createState() => _PostCardState();
@@ -39,11 +45,13 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   late bool _isFavorite;
+  late bool _isFollowing;
 
   @override
   void initState() {
     super.initState();
     _isFavorite = widget.isFavorite;
+    _isFollowing = widget.isFollowing;
   }
 
   @override
@@ -51,6 +59,9 @@ class _PostCardState extends State<PostCard> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.isFavorite != widget.isFavorite) {
       _isFavorite = widget.isFavorite;
+    }
+    if (oldWidget.isFollowing != widget.isFollowing) {
+      _isFollowing = widget.isFollowing;
     }
   }
 
@@ -86,18 +97,33 @@ class _PostCardState extends State<PostCard> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      RichText(
-                        text: TextSpan(
-                          text: widget.data.communityName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            height: 2,
+                      Row(
+                        children: [
+                          Text(
+                            widget.data.communityName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              height: 2,
+                            ),
                           ),
-                          children: [
-                            TextSpan(
-                              text: ' ∙ Follow',
+                          const Text(
+                            ' ∙ ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              height: 2,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() => _isFollowing = !_isFollowing);
+                              widget.onFollowToggle?.call();
+                            },
+                            child: Text(
+                              _isFollowing ? 'Following' : 'Follow',
                               style: const TextStyle(
                                 color: Color(0xFF007D99),
                                 fontSize: 14,
@@ -105,8 +131,8 @@ class _PostCardState extends State<PostCard> {
                                 height: 2,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                       Transform.translate(
                         offset: const Offset(0, -6),

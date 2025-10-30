@@ -20,7 +20,9 @@ class _HomePageState extends State<HomePage> {
   List<PostShowcaseData> _posts = [];
   List<String> _showcasePostIds = []; // Store showcase post IDs separately
   List<String> _postIds = []; // Store all post IDs
+  List<String> _clubIds = []; // Store club IDs for each post
   final Set<String> _likedPostIds = <String>{}; // Changed to store post IDs
+  final Set<String> _followedClubIds = <String>{}; // Store followed club IDs
   List<PostCardData> _popularPosts = [];
   int _currentIndex = 0;
   bool _isLoading = true;
@@ -46,12 +48,16 @@ class _HomePageState extends State<HomePage> {
       // Fetch user's liked posts
       final likedPosts = await _postService.getUserLikedPosts(user.uid);
 
+      // Fetch user's followed clubs
+      final followedClubs = await _postService.getUserFollowedClubs(user.uid);
+
       final allPostsData = await _postService.getAllPosts();
 
       final List<PostShowcaseData> showcasePosts = [];
       final List<String> showcasePostIds = []; // Separate list for showcase IDs
       final List<PostCardData> popularPosts = [];
       final List<String> postIds = [];
+      final List<String> clubIds = []; // Track club IDs
 
       // Get today's date (without time component)
       final now = DateTime.now();
@@ -93,6 +99,7 @@ class _HomePageState extends State<HomePage> {
             'MMM d, yyyy · h:mm a',
           ).format(post.eventDate),
           imageUrl: post.photoURL,
+          clubId: post.clubId, // Add club ID
         );
 
         // Only add to showcase if event is today
@@ -104,6 +111,7 @@ class _HomePageState extends State<HomePage> {
         // All posts go to popular section
         popularPosts.add(postCardData);
         postIds.add(postId);
+        clubIds.add(post.clubId); // Track club ID
       }
 
       setState(() {
@@ -111,8 +119,11 @@ class _HomePageState extends State<HomePage> {
         _showcasePostIds = showcasePostIds;
         _popularPosts = popularPosts;
         _postIds = postIds;
+        _clubIds = clubIds;
         _likedPostIds.clear();
         _likedPostIds.addAll(likedPosts);
+        _followedClubIds.clear();
+        _followedClubIds.addAll(followedClubs);
         _isLoading = false;
       });
     } catch (e) {
@@ -205,6 +216,50 @@ class _HomePageState extends State<HomePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error updating like: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _toggleFollow(int index) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || index >= _clubIds.length) return;
+
+    final clubId = _clubIds[index];
+    final isCurrentlyFollowing = _followedClubIds.contains(clubId);
+
+    // Optimistically update UI
+    setState(() {
+      if (isCurrentlyFollowing) {
+        _followedClubIds.remove(clubId);
+      } else {
+        _followedClubIds.add(clubId);
+      }
+    });
+
+    try {
+      // Update Firestore
+      await _postService.toggleFollowClub(
+        user.uid,
+        clubId,
+        isCurrentlyFollowing,
+      );
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        if (isCurrentlyFollowing) {
+          _followedClubIds.add(clubId);
+        } else {
+          _followedClubIds.remove(clubId);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating follow: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -338,6 +393,12 @@ class _HomePageState extends State<HomePage> {
                             ),
                             onFavoriteToggle: () =>
                                 _togglePopularFavorite(entry.key),
+                            isFollowing: _followedClubIds.contains(
+                              entry.key < _clubIds.length
+                                  ? _clubIds[entry.key]
+                                  : '',
+                            ),
+                            onFollowToggle: () => _toggleFollow(entry.key),
                           ),
                         );
                       }),

@@ -16,6 +16,7 @@ class _SavedPageState extends State<SavedPage> {
   final PostService _postService = PostService();
   List<Map<String, dynamic>> _likedPosts = [];
   Set<String> _likedPostIds = {};
+  Set<String> _followedClubIds = {};
   bool _isLoading = true;
 
   @override
@@ -36,6 +37,9 @@ class _SavedPageState extends State<SavedPage> {
 
       // Get user's liked post IDs
       final likedPostIds = await _postService.getUserLikedPosts(user.uid);
+
+      // Get user's followed clubs
+      final followedClubs = await _postService.getUserFollowedClubs(user.uid);
 
       if (likedPostIds.isEmpty) {
         setState(() {
@@ -65,6 +69,7 @@ class _SavedPageState extends State<SavedPage> {
       setState(() {
         _likedPosts = likedPostsData;
         _likedPostIds = Set.from(likedPostIds);
+        _followedClubIds = Set.from(followedClubs);
         _isLoading = false;
       });
     } catch (e) {
@@ -110,6 +115,48 @@ class _SavedPageState extends State<SavedPage> {
         );
         // Refresh to get correct state
         _fetchLikedPosts();
+      }
+    }
+  }
+
+  Future<void> _toggleFollow(String clubId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final isCurrentlyFollowing = _followedClubIds.contains(clubId);
+
+    // Optimistically update UI
+    setState(() {
+      if (isCurrentlyFollowing) {
+        _followedClubIds.remove(clubId);
+      } else {
+        _followedClubIds.add(clubId);
+      }
+    });
+
+    try {
+      await _postService.toggleFollowClub(
+        user.uid,
+        clubId,
+        isCurrentlyFollowing,
+      );
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        if (isCurrentlyFollowing) {
+          _followedClubIds.add(clubId);
+        } else {
+          _followedClubIds.remove(clubId);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating follow: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -207,6 +254,7 @@ class _SavedPageState extends State<SavedPage> {
                             'MMM d, yyyy · h:mm a',
                           ).format(post.eventDate),
                           imageUrl: post.photoURL,
+                          clubId: post.clubId,
                         );
 
                         return Padding(
@@ -217,6 +265,10 @@ class _SavedPageState extends State<SavedPage> {
                               data: postCardData,
                               isFavorite: true,
                               onFavoriteToggle: () => _toggleLike(postId),
+                              isFollowing: _followedClubIds.contains(
+                                post.clubId,
+                              ),
+                              onFollowToggle: () => _toggleFollow(post.clubId),
                             ),
                           ),
                         );
