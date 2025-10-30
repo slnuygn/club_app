@@ -127,8 +127,9 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 FloatingActionButton.extended(
                   onPressed: _handlePostButtonPress,
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: const Color(0xFF807373),
                   heroTag: 'postButton',
+                  elevation: 0,
                   icon: const Icon(Icons.add, color: Colors.white),
                   label: const Text(
                     'Post',
@@ -141,8 +142,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 10),
                 FloatingActionButton.extended(
                   onPressed: _logout,
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: const Color(0xFF807373),
                   heroTag: 'logoutButton',
+                  elevation: 0,
                   icon: const Icon(Icons.logout, color: Colors.white),
                   label: const Text(
                     'Log out',
@@ -156,7 +158,8 @@ class _ProfilePageState extends State<ProfilePage> {
             )
           : FloatingActionButton.extended(
               onPressed: _logout,
-              backgroundColor: Colors.redAccent,
+              backgroundColor: const Color(0xFF807373),
+              elevation: 0,
               icon: const Icon(Icons.logout, color: Colors.white),
               label: const Text(
                 'Log out',

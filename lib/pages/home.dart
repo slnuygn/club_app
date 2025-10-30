@@ -50,13 +50,13 @@ class _HomePageState extends State<HomePage> {
           dateDisplay: DateFormat(
             'MMM d, yyyy · h:mm a',
           ).format(post.eventDate),
-          placeDisplay: post.eventLocationURL,
+          placeDisplay: post.eventPlaceholder,
         );
 
         final postCardData = PostCardData(
           communityName: club.name,
           communityAvatarUrl: club.photoUrl,
-          location: post.eventLocationURL,
+          location: post.eventPlaceholder,
           caption: post.postCaption,
           dateDisplay: DateFormat(
             'MMM d, yyyy · h:mm a',

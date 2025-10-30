@@ -20,6 +20,8 @@ class _PostingPageState extends State<PostingPage> {
   final TextEditingController _eventLocationController =
       TextEditingController();
   final TextEditingController _postCaptionController = TextEditingController();
+  final TextEditingController _eventPlaceholderController =
+      TextEditingController();
 
   DateTime? _selectedDate;
   File? _selectedImage;
@@ -31,6 +33,7 @@ class _PostingPageState extends State<PostingPage> {
   void dispose() {
     _eventLocationController.dispose();
     _postCaptionController.dispose();
+    _eventPlaceholderController.dispose();
     super.dispose();
   }
 
@@ -77,18 +80,18 @@ class _PostingPageState extends State<PostingPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Colors.white),
+                leading: const Icon(Icons.photo_library, color: Colors.grey),
                 title: const Text(
                   'Gallery',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.grey),
                 ),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: Colors.white),
+                leading: const Icon(Icons.camera_alt, color: Colors.grey),
                 title: const Text(
                   'Camera',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: Colors.grey),
                 ),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
@@ -172,7 +175,8 @@ class _PostingPageState extends State<PostingPage> {
       await FirebaseFirestore.instance.collection('posts').add({
         'club_id': widget.clubId,
         'event_date': Timestamp.fromDate(_selectedDate!),
-        'event_location': _eventLocationController.text.trim(),
+        'event_location_URL': _eventLocationController.text.trim(),
+        'event_placeholder': _eventPlaceholderController.text.trim(),
         'photo_URL': photoUrl,
         'post_caption': _postCaptionController.text.trim(),
       });
@@ -217,9 +221,7 @@ class _PostingPageState extends State<PostingPage> {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isPosting
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? const Center(child: CircularProgressIndicator(color: Colors.grey))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Form(
@@ -235,22 +237,18 @@ class _PostingPageState extends State<PostingPage> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF282323),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _selectedDate == null
-                                ? Colors.grey
-                                : Colors.blueAccent,
-                          ),
+                          border: Border.all(color: const Color(0xFF5C5C5C)),
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.calendar_today,
-                              color: Colors.white,
+                              color: Colors.grey,
                             ),
                             const SizedBox(width: 12),
                             Text(
                               _selectedDate == null
-                                  ? 'Select Event Date'
+                                  ? 'Select Event Date...'
                                   : DateFormat(
                                       'MMM dd, yyyy',
                                     ).format(_selectedDate!),
@@ -274,37 +272,84 @@ class _PostingPageState extends State<PostingPage> {
                       decoration: InputDecoration(
                         labelText: 'Event Location URL (Google Maps)',
                         labelStyle: const TextStyle(color: Colors.grey),
-                        hintText: 'Paste Google Maps link here',
+                        hintText: 'Paste Google Maps link here...',
                         hintStyle: const TextStyle(color: Colors.grey),
                         prefixIcon: const Icon(
                           Icons.location_on,
-                          color: Colors.white,
+                          color: Colors.grey,
                         ),
                         filled: true,
                         fillColor: const Color(0xFF282323),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.grey),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.grey),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                            color: Colors.blueAccent,
+                            color: Color(0xFF5C5C5C),
                           ),
                         ),
                       ),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter event location URL';
+                          return 'Please enter event location URL...';
                         }
                         // Basic URL validation
                         if (!value.contains('maps') &&
                             !value.startsWith('http')) {
                           return 'Please enter a valid URL';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Event Placeholder
+                    TextFormField(
+                      controller: _eventPlaceholderController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Location Placeholder Text',
+                        labelStyle: const TextStyle(color: Colors.grey),
+                        hintText: 'Enter location placeholder text...',
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        prefixIcon: const Icon(
+                          Icons.location_on,
+                          color: Colors.grey,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFF282323),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Please enter location placeholder text';
                         }
                         return null;
                       },
@@ -319,11 +364,7 @@ class _PostingPageState extends State<PostingPage> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF282323),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: _selectedImage == null
-                                ? Colors.grey
-                                : Colors.blueAccent,
-                          ),
+                          border: Border.all(color: const Color(0xFF5C5C5C)),
                         ),
                         child: _selectedImage == null
                             ? const Column(
@@ -371,16 +412,20 @@ class _PostingPageState extends State<PostingPage> {
                         fillColor: const Color(0xFF282323),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.grey),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.grey),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF5C5C5C),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                            color: Colors.blueAccent,
+                            color: Color(0xFF5C5C5C),
                           ),
                         ),
                       ),
@@ -397,7 +442,7 @@ class _PostingPageState extends State<PostingPage> {
                     TextButton(
                       onPressed: _isPosting ? null : _submitPost,
                       style: TextButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: const Color(0xFF807373),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
