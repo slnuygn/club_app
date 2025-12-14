@@ -214,7 +214,7 @@ class _PostingPageState extends State<PostingPage> {
         _selectedTime!.minute,
       );
 
-      // Create post document in Firestore
+      // Create post document in Firestore (mark as pending)
       await FirebaseFirestore.instance.collection('posts').add({
         'club_id': widget.clubId,
         'event_date': Timestamp.fromDate(eventDateTime),
@@ -222,6 +222,7 @@ class _PostingPageState extends State<PostingPage> {
         'event_placeholder': _eventPlaceholderController.text.trim(),
         'photo_URL': photoUrl,
         'post_caption': _postCaptionController.text.trim(),
+        'state': 'pending',
       });
 
       if (mounted) {

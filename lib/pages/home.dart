@@ -1,5 +1,6 @@
 import 'package:club_app/services/post_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -51,7 +52,19 @@ class _HomePageState extends State<HomePage> {
       // Fetch user's followed clubs
       final followedClubs = await _postService.getUserFollowedClubs(user.uid);
 
-      final allPostsData = await _postService.getAllPosts();
+      // Determine user's club key to exclude that club's posts from home feed
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final userData = userDoc.data();
+      final String? userClubKey = userData != null
+          ? (userData['club_key'] as String?)
+          : null;
+
+      // Fetch only approved posts for the home feed (include all clubs so
+      // approved posts from the user's club appear automatically once approved)
+      final allPostsData = await _postService.getAllPosts(state: 'approved');
 
       final List<PostShowcaseData> showcasePosts = [];
       final List<String> showcasePostIds = []; // Separate list for showcase IDs

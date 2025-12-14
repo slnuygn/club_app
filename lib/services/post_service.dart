@@ -70,18 +70,32 @@ class PostService {
     return {'post': post, 'club': club};
   }
 
-  Future<List<Map<String, dynamic>>> getAllPosts() async {
+  Future<List<Map<String, dynamic>>> getAllPosts({
+    List<String>? excludeClubIds,
+    String? state,
+  }) async {
     try {
       // Get all posts from Firestore
-      QuerySnapshot postsSnapshot = await _firestore
-          .collection('posts')
-          .orderBy('event_date', descending: false)
-          .get();
+      Query postsQuery = _firestore.collection('posts');
+      if (state != null) {
+        postsQuery = postsQuery.where('state', isEqualTo: state);
+      }
+      postsQuery = postsQuery.orderBy('event_date', descending: false);
+
+      QuerySnapshot postsSnapshot = await postsQuery.get();
 
       List<Map<String, dynamic>> allPostsData = [];
 
       for (var postDoc in postsSnapshot.docs) {
         final postData = postDoc.data() as Map<String, dynamic>;
+
+        // Optionally exclude posts from specific clubs (e.g., the user's own club)
+        final postClubId = postData['club_id'] as String?;
+        if (excludeClubIds != null &&
+            postClubId != null &&
+            excludeClubIds.contains(postClubId)) {
+          continue;
+        }
 
         // Convert gs:// URL to HTTPS for photo
         if (postData['photo_URL'] != null &&

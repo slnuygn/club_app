@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'login.dart';
 import '../services/post_service.dart';
 import 'posting.dart';
+import '../widgets/post.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -221,7 +222,7 @@ class _ProfilePageState extends State<ProfilePage>
                 Builder(
                   builder: (context) {
                     final tabLabels = _clubKey != null
-                        ? ['Notifications', 'Clubs', 'Posts']
+                        ? ['Notifications', 'Clubs', 'Manage']
                         : ['Notifications', 'Clubs'];
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -282,10 +283,159 @@ class _ProfilePageState extends State<ProfilePage>
                           ),
                         ),
                         if (_clubKey != null)
-                          const Center(
-                            child: Text(
-                              'Gönderiler',
-                              style: TextStyle(color: Colors.white),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              3.0,
+                              10.0,
+                              3.0,
+                              10.0,
+                            ),
+                            child: SingleChildScrollView(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF121212),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Theme(
+                                  data: Theme.of(
+                                    context,
+                                  ).copyWith(dividerColor: Colors.transparent),
+                                  child: ExpansionTile(
+                                    tilePadding: const EdgeInsets.symmetric(
+                                      horizontal: 13,
+                                      vertical: 2,
+                                    ),
+                                    collapsedBackgroundColor:
+                                        Colors.transparent,
+                                    backgroundColor: Colors.transparent,
+                                    iconColor: Colors.white,
+                                    collapsedIconColor: Colors.white,
+                                    childrenPadding: const EdgeInsets.fromLTRB(
+                                      0.0,
+                                      0.0,
+                                      0.0,
+                                      6.0,
+                                    ),
+                                    title: const Text(
+                                      'Pending Posts',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    children: <Widget>[
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4.0,
+                                        ),
+                                        child: StreamBuilder<QuerySnapshot>(
+                                          stream: FirebaseFirestore.instance
+                                              .collection('posts')
+                                              .where(
+                                                'club_id',
+                                                isEqualTo: _clubKey,
+                                              )
+                                              .where(
+                                                'state',
+                                                isEqualTo: 'pending',
+                                              )
+                                              .snapshots(),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.hasError) {
+                                              return Center(
+                                                child: Text(
+                                                  'Error loading posts: ${snapshot.error}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white70,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return const Center(
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                    ),
+                                              );
+                                            }
+                                            if (!snapshot.hasData ||
+                                                snapshot.data!.docs.isEmpty) {
+                                              return const Center(
+                                                child: Text(
+                                                  'No pending posts',
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                  ),
+                                                ),
+                                              );
+                                            }
+
+                                            final docs = snapshot.data!.docs;
+
+                                            return ListView.separated(
+                                              padding: const EdgeInsets.only(
+                                                top: 8,
+                                                bottom: 4,
+                                              ),
+                                              shrinkWrap: true,
+                                              physics:
+                                                  const NeverScrollableScrollPhysics(),
+                                              itemCount: docs.length,
+                                              separatorBuilder: (_, __) =>
+                                                  const SizedBox(height: 8),
+                                              itemBuilder: (context, index) {
+                                                final data =
+                                                    docs[index].data()
+                                                        as Map<String, dynamic>;
+                                                final photoUrl =
+                                                    data['photo_URL'] ?? '';
+                                                final caption =
+                                                    data['post_caption'] ?? '';
+                                                final location =
+                                                    data['event_placeholder'] ??
+                                                    '';
+                                                final Timestamp ts =
+                                                    data['event_date']
+                                                        as Timestamp;
+                                                final dateDisplay =
+                                                    DateTime.fromMillisecondsSinceEpoch(
+                                                      ts.millisecondsSinceEpoch,
+                                                    );
+
+                                                final postData = PostCardData(
+                                                  communityName:
+                                                      _clubKey ?? 'Club',
+                                                  communityAvatarUrl: '',
+                                                  location: location,
+                                                  caption: caption,
+                                                  dateDisplay:
+                                                      '${dateDisplay.toLocal()}',
+                                                  imageUrl: photoUrl,
+                                                  clubId: data['club_id'] ?? '',
+                                                );
+
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 12.0,
+                                                        vertical: 6.0,
+                                                      ),
+                                                  child: PostCard(
+                                                    data: postData,
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                       ],
