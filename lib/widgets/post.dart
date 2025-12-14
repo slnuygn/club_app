@@ -88,9 +88,9 @@ class _PostCardState extends State<PostCard> {
                 children: [
                   CircleAvatar(
                     radius: avatarRadius,
-                    backgroundImage: NetworkImage(
-                      widget.data.communityAvatarUrl,
-                    ),
+                    backgroundImage: widget.data.communityAvatarUrl.isNotEmpty
+                        ? NetworkImage(widget.data.communityAvatarUrl)
+                        : null,
                     backgroundColor: Colors.white,
                   ),
                   const SizedBox(width: 8),

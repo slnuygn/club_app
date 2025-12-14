@@ -13,16 +13,52 @@ class ProfilePage extends StatefulWidget {
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage>
+    with TickerProviderStateMixin {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final PostService _postService = PostService();
   String? _clubKey;
   bool _isLoading = true;
   List<String> _followingClubs = [];
+  User? _user;
+  late TabController _tabController;
+
+  void _onTabChanged() {
+    setState(() {});
+  }
+
+  void _createTabController() {
+    final newLength = _clubKey != null ? 3 : 2;
+    // If controller already exists with same length, keep it.
+    if (_tabController != null && _tabController.length == newLength) return;
+    // Preserve current index if possible
+    int currentIndex = 0;
+    try {
+      currentIndex = _tabController.index;
+    } catch (_) {
+      currentIndex = 0;
+    }
+    // Dispose old controller if present
+    try {
+      _tabController.removeListener(_onTabChanged);
+      _tabController.dispose();
+    } catch (_) {}
+
+    _tabController = TabController(
+      length: newLength,
+      vsync: this,
+      initialIndex: currentIndex < newLength ? currentIndex : 0,
+    );
+    _tabController.addListener(_onTabChanged);
+  }
 
   @override
   void initState() {
     super.initState();
+    _user = FirebaseAuth.instance.currentUser;
+    // Start with 2 tabs by default; we'll recreate after fetching user data
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _fetchUserData();
   }
 
@@ -41,6 +77,8 @@ class _ProfilePageState extends State<ProfilePage> {
             _followingClubs = List<String>.from(data?['following_clubs'] ?? []);
             _isLoading = false;
           });
+          // Recreate tab controller to reflect whether the "Gönderilerim" tab should be available
+          _createTabController();
         } else {
           setState(() {
             _isLoading = false;
@@ -113,151 +151,149 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   @override
+  void dispose() {
+    try {
+      _tabController.removeListener(_onTabChanged);
+    } catch (_) {}
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF282323),
-      body: _isLoading
+      backgroundColor: const Color(0xFF1B1B1B),
+      body: (_isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : RefreshIndicator(
-              onRefresh: _refreshData,
-              color: Colors.white,
-              backgroundColor: const Color(0xFF807373),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 24),
-                    const Text(
-                      "My Clubs",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 1),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1B1B1B),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: _followingClubs.isEmpty
-                            ? const Center(
-                                child: Text(
-                                  'No clubs followed yet',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
+          : Column(
+              children: [
+                RefreshIndicator(
+                  onRefresh: _refreshData,
+                  color: Colors.white,
+                  backgroundColor: const Color(0xFF807373),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.only(left: 10, right: 10, top: 1),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _user != null
+                            ? Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 70,
+                                      backgroundImage: _user!.photoURL != null
+                                          ? NetworkImage(
+                                              _user!.photoURL!.replaceAll(
+                                                RegExp(r'=s\d+'),
+                                                '=s400',
+                                              ),
+                                            )
+                                          : null,
+                                      backgroundColor: Colors.grey,
+                                      child: _user!.photoURL == null
+                                          ? const Icon(
+                                              Icons.person,
+                                              color: Colors.white,
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Text(
+                                      'Welcome, \n${_user!.displayName ?? 'User'}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 30,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               )
-                            : Wrap(
-                                spacing: 16,
-                                runSpacing: 16,
-                                children: _followingClubs
-                                    .where((clubId) => clubId.isNotEmpty)
-                                    .map((clubId) {
-                                      return FutureBuilder(
-                                        future: _postService.getClub(clubId),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState ==
-                                              ConnectionState.waiting) {
-                                            return const SizedBox(
-                                              width: 80,
-                                              child: Column(
-                                                children: [
-                                                  CircleAvatar(
-                                                    radius: 30,
-                                                    backgroundColor:
-                                                        Colors.grey,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          color: Colors.white,
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }
-                                          if (snapshot.hasError) {
-                                            return const SizedBox(
-                                              width: 80,
-                                              child: Column(
-                                                children: [
-                                                  CircleAvatar(
-                                                    radius: 30,
-                                                    backgroundColor:
-                                                        Colors.grey,
-                                                    child: Icon(
-                                                      Icons.error,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }
-                                          if (!snapshot.hasData) {
-                                            return const SizedBox.shrink();
-                                          }
-
-                                          final club = snapshot.data!;
-                                          return SizedBox(
-                                            width: 80,
-                                            child: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                CircleAvatar(
-                                                  radius: 45,
-                                                  backgroundColor:
-                                                      Colors.grey[800],
-                                                  backgroundImage:
-                                                      club.photoUrl.isNotEmpty
-                                                      ? NetworkImage(
-                                                          club.photoUrl,
-                                                        )
-                                                      : null,
-                                                  child: club.photoUrl.isEmpty
-                                                      ? const Icon(
-                                                          Icons.group,
-                                                          size: 45,
-                                                          color: Colors.white,
-                                                        )
-                                                      : null,
-                                                ),
-                                                const SizedBox(height: 1),
-                                                Text(
-                                                  club.name,
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 14,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    })
-                                    .toList(),
-                              ),
-                      ),
+                            : const SizedBox.shrink(),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+                const SizedBox(height: 12),
+                Builder(
+                  builder: (context) {
+                    final tabLabels = _clubKey != null
+                        ? ['Notifications', 'Clubs', 'Posts']
+                        : ['Notifications', 'Clubs'];
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(
+                        tabLabels.length,
+                        (i) => GestureDetector(
+                          onTap: () {
+                            if (i < _tabController.length)
+                              _tabController.animateTo(i);
+                          },
+                          child: Container(
+                            width:
+                                MediaQuery.of(context).size.width /
+                                tabLabels.length,
+                            decoration: BoxDecoration(
+                              color: _tabController.index == i
+                                  ? const Color(0xFF282323)
+                                  : Colors.transparent,
+                              borderRadius: _tabController.index == i
+                                  ? const BorderRadius.only(
+                                      topLeft: Radius.circular(10),
+                                      topRight: Radius.circular(10),
+                                    )
+                                  : BorderRadius.zero,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            alignment: Alignment.center,
+                            child: Text(
+                              tabLabels[i],
+                              style: TextStyle(
+                                color: _tabController.index == i
+                                    ? Colors.white
+                                    : Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Expanded(
+                  child: Container(
+                    color: const Color(0xFF282323),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        const Center(
+                          child: Text(
+                            'Bildirimler',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        const Center(
+                          child: Text(
+                            'Topluluklar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                        if (_clubKey != null)
+                          const Center(
+                            child: Text(
+                              'Gönderiler',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            )),
       floatingActionButton: _isLoading
           ? null
           : _clubKey != null
@@ -281,7 +317,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 const SizedBox(height: 10),
                 FloatingActionButton.extended(
                   onPressed: _logout,
-                  backgroundColor: const Color(0xFF807373),
+                  backgroundColor: const Color.fromARGB(255, 72, 64, 64),
                   heroTag: 'logoutButton',
                   elevation: 0,
                   icon: const Icon(Icons.logout, color: Colors.white),
@@ -297,15 +333,12 @@ class _ProfilePageState extends State<ProfilePage> {
             )
           : FloatingActionButton.extended(
               onPressed: _logout,
-              backgroundColor: const Color(0xFF807373),
+              backgroundColor: const Color.fromARGB(255, 72, 64, 64),
               elevation: 0,
               icon: const Icon(Icons.logout, color: Colors.white),
               label: const Text(
                 'Log out',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.white),
               ),
             ),
     );

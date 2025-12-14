@@ -24,6 +24,7 @@ class _PostingPageState extends State<PostingPage> {
       TextEditingController();
 
   DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
   File? _selectedImage;
   bool _isPosting = false;
 
@@ -61,6 +62,32 @@ class _PostingPageState extends State<PostingPage> {
     if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
+      });
+    }
+  }
+
+  Future<void> _pickTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blueAccent,
+              onPrimary: Colors.white,
+              surface: Color(0xFF282323),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
       });
     }
   }
@@ -156,6 +183,13 @@ class _PostingPageState extends State<PostingPage> {
       return;
     }
 
+    if (_selectedTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select an event time')),
+      );
+      return;
+    }
+
     if (_selectedImage == null) {
       ScaffoldMessenger.of(
         context,
@@ -171,10 +205,19 @@ class _PostingPageState extends State<PostingPage> {
       // Upload image to Firebase Storage
       final String photoUrl = await _uploadImage(_selectedImage!);
 
+      // Combine date and time
+      final DateTime eventDateTime = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
+      );
+
       // Create post document in Firestore
       await FirebaseFirestore.instance.collection('posts').add({
         'club_id': widget.clubId,
-        'event_date': Timestamp.fromDate(_selectedDate!),
+        'event_date': Timestamp.fromDate(eventDateTime),
         'event_location_URL': _eventLocationController.text.trim(),
         'event_placeholder': _eventPlaceholderController.text.trim(),
         'photo_URL': photoUrl,
@@ -254,6 +297,37 @@ class _PostingPageState extends State<PostingPage> {
                                     ).format(_selectedDate!),
                               style: TextStyle(
                                 color: _selectedDate == null
+                                    ? Colors.grey
+                                    : Colors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Event Time Picker
+                    GestureDetector(
+                      onTap: _pickTime,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF282323),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF5C5C5C)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time, color: Colors.grey),
+                            const SizedBox(width: 12),
+                            Text(
+                              _selectedTime == null
+                                  ? 'Select Event Time...'
+                                  : _selectedTime!.format(context),
+                              style: TextStyle(
+                                color: _selectedTime == null
                                     ? Colors.grey
                                     : Colors.white,
                                 fontSize: 16,

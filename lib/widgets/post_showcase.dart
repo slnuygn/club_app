@@ -58,7 +58,9 @@ class PostShowcase extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(data.backgroundImageUrl, fit: BoxFit.cover),
+            data.backgroundImageUrl.isNotEmpty
+                ? Image.network(data.backgroundImageUrl, fit: BoxFit.cover)
+                : Container(color: Colors.grey[800]),
             Align(
               alignment: Alignment.centerLeft,
               child: Padding(
@@ -108,7 +110,9 @@ class PostShowcase extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: avatarRadius,
-                      backgroundImage: NetworkImage(data.communityAvatarUrl),
+                      backgroundImage: data.communityAvatarUrl.isNotEmpty
+                          ? NetworkImage(data.communityAvatarUrl)
+                          : null,
                       backgroundColor: Colors.white24,
                     ),
                     const SizedBox(width: 8),

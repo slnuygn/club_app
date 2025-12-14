@@ -24,7 +24,7 @@ class PostService {
       return await ref.getDownloadURL();
     } catch (e) {
       print('Error converting gs:// URL: $e');
-      // Return a placeholder or rethrow
+      // Return empty string to indicate failure, UI will handle with placeholder
       return '';
     }
   }
