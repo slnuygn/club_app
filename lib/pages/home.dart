@@ -311,31 +311,47 @@ class _HomePageState extends State<HomePage> {
                 child: CircularProgressIndicator(color: Colors.white),
               )
             : _popularPosts.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'No posts available yet',
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                    ),
-                    const SizedBox(height: 16),
-                    TextButton.icon(
-                      onPressed: _fetchPostData,
-                      icon: const Icon(Icons.refresh, color: Colors.white),
-                      label: const Text(
-                        'Refresh',
-                        style: TextStyle(color: Colors.white),
+            ? RefreshIndicator(
+                onRefresh: () async {
+                  await _fetchPostData();
+                },
+                color: Colors.blueAccent,
+                backgroundColor: const Color(0xFF282323),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.8,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'No posts available yet',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          const SizedBox(height: 16),
+                          TextButton.icon(
+                            onPressed: _fetchPostData,
+                            icon: const Icon(
+                              Icons.refresh,
+                              color: Colors.white,
+                            ),
+                            label: const Text(
+                              'Refresh',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Colors.blueAccent,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
                     ),
-                  ],
+                  ),
                 ),
               )
             : RefreshIndicator(

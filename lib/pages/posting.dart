@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -214,7 +215,25 @@ class _PostingPageState extends State<PostingPage> {
         _selectedTime!.minute,
       );
 
-      // Create post document in Firestore (mark as pending)
+      // Get current user's club rank to determine post state
+      final user = FirebaseAuth.instance.currentUser;
+      String postState = 'pending'; // Default state
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (userDoc.exists) {
+          final userData = userDoc.data();
+          final clubRank = userData?['club_rank'] as String?;
+          // Presidents and Co-Presidents get automatic approval
+          if (clubRank == 'President' || clubRank == 'Co-President') {
+            postState = 'approved';
+          }
+        }
+      }
+
+      // Create post document in Firestore
       await FirebaseFirestore.instance.collection('posts').add({
         'club_id': widget.clubId,
         'event_date': Timestamp.fromDate(eventDateTime),
@@ -222,13 +241,17 @@ class _PostingPageState extends State<PostingPage> {
         'event_placeholder': _eventPlaceholderController.text.trim(),
         'photo_URL': photoUrl,
         'post_caption': _postCaptionController.text.trim(),
-        'state': 'pending',
+        'state': postState,
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Post created successfully!'),
+          SnackBar(
+            content: Text(
+              postState == 'approved'
+                  ? 'Post created and approved successfully!'
+                  : 'Post created successfully!',
+            ),
             backgroundColor: Colors.green,
           ),
         );

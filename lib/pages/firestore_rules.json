@@ -51,7 +51,9 @@ service cloud.firestore {
 
           'photo_URL',
 
-          'post_caption'
+          'post_caption',
+
+          'state'
 
         ]) &&
 
@@ -59,7 +61,47 @@ service cloud.firestore {
 
         request.auth != null &&
 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_key == request.resource.data.club_id;
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_key == request.resource.data.club_id &&
+
+        (
+
+          // Presidents and Co-Presidents can create approved posts
+
+          (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_rank in ['President', 'Co-President'] &&
+
+           request.resource.data.state == 'approved') ||
+
+          // Others must create pending posts
+
+          (request.resource.data.state == 'pending')
+
+        );
+
+
+      // Allow club members (President, Co-President, Board) to update post state
+
+      allow update: if
+
+        request.auth != null &&
+
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_key == resource.data.club_id &&
+
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_rank in ['President', 'Co-President', 'Board'] &&
+
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']) &&
+
+        request.resource.data.state in ['approved', 'rejected'];
+
+
+      // Allow club members to delete their own club's posts
+
+      allow delete: if
+
+        request.auth != null &&
+
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_key == resource.data.club_id &&
+
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_rank in ['President', 'Co-President', 'Board'];
 
     }
 
@@ -129,6 +171,21 @@ service cloud.firestore {
             'profile_photo_URL'
 
           ]);
+
+
+      // Allow club leaders (President, Co-President, Board) to grant/revoke membership
+
+      // They can update another user's club_key and club_rank
+
+      allow update: if
+
+          request.auth != null &&
+
+          request.auth.uid != userId && // Not updating their own document
+
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_rank in ['President', 'Co-President', 'Board'] &&
+
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['club_key', 'club_rank']);
 
     }
 

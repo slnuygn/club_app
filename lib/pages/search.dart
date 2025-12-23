@@ -13,6 +13,7 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   String? _userClubRank;
+  String? _currentUserClubKey;
   final TextEditingController _searchController = TextEditingController();
   List<ClubSearchData> _allClubs = [];
   List<ClubSearchData> _clubSearchResults = [];
@@ -47,6 +48,7 @@ class _SearchPageState extends State<SearchPage> {
       if (userDoc.exists) {
         setState(() {
           _userClubRank = userDoc.data()?['club_rank'] as String?;
+          _currentUserClubKey = userDoc.data()?['club_key'] as String?;
         });
       }
     }
@@ -69,6 +71,7 @@ class _SearchPageState extends State<SearchPage> {
           userName: userName,
           userAvatarUrl: data['profile_photo_URL'] ?? '',
           userId: doc.id,
+          clubKey: data['club_key'],
         );
       }).toList();
 
@@ -154,13 +157,59 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   bool get _shouldShowFilter {
-    return _userClubRank == 'President' ||
-        _userClubRank == 'Co-President' ||
-        _userClubRank == 'Board';
+    return _userClubRank == 'President' || _userClubRank == 'Co-President';
   }
 
   List<dynamic> _getCurrentSearchResults() {
     return _searchType == 'club' ? _clubSearchResults : _userSearchResults;
+  }
+
+  Future<void> _handleMenuAction(String action, String userId) async {
+    try {
+      if (action == 'grant') {
+        if (_currentUserClubKey == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'You must be a member of a club to grant membership',
+              ),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+
+        await FirebaseFirestore.instance.collection('users').doc(userId).update(
+          {'club_key': _currentUserClubKey, 'club_rank': 'Board'},
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Membership granted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Reload users to reflect the change
+          await _loadAllUsers();
+        }
+      } else if (action == 'evoke') {
+        // TODO: Implement evoke membership
+        print('Evoke membership for user: $userId');
+      } else if (action == 'report') {
+        // TODO: Implement report user
+        print('Report user: $userId');
+      } else if (action == 'block') {
+        // TODO: Implement block user
+        print('Block user: $userId');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -285,12 +334,20 @@ class _SearchPageState extends State<SearchPage> {
                               );
                             } else {
                               final userData = _userSearchResults[index];
+                              final currentUser =
+                                  FirebaseAuth.instance.currentUser;
+                              final isCurrentUser =
+                                  currentUser != null &&
+                                  currentUser.uid == userData.userId;
                               return UserSearchItem(
                                 data: userData,
                                 onTap: () {
                                   // Handle user selection
                                   print('Selected user: ${userData.userName}');
                                 },
+                                isCurrentUser: isCurrentUser,
+                                onMenuAction: _handleMenuAction,
+                                currentUserClubKey: _currentUserClubKey,
                               );
                             }
                           },
