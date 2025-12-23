@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../main.dart'; // Import to access ClubsHome
+import '../services/user_service.dart';
 
 // A simple wrapper to check auth state and redirect the user
 class AuthWrapper extends StatelessWidget {
@@ -44,6 +45,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
+  final UserService _userService = UserService();
 
   Future<User?> _signInWithGoogle() async {
     setState(() {
@@ -76,8 +78,12 @@ class _LoginPageState extends State<LoginPage> {
       final UserCredential userCredential = await FirebaseAuth.instance
           .signInWithCredential(credential);
 
-      // Successfully signed in - navigate to home
+      // Successfully signed in - create/update user document in Firestore
       print('Sign-in successful: ${userCredential.user?.email}');
+
+      if (userCredential.user != null) {
+        await _userService.createUserDocument(userCredential.user!);
+      }
 
       if (mounted) {
         // Navigate to ClubsHome and remove all previous routes
