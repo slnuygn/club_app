@@ -1,0 +1,137 @@
+rules_version = '2';
+
+
+service cloud.firestore {
+
+  match /databases/{database}/documents {
+
+
+    // Allow anyone to read from the 'clubs' collection.
+
+    // When creating a new club, it must contain only 'club_name', 'club_photo_URL', and 'club_bio'.
+
+    match /clubs/{clubId} {
+
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly([
+
+        'club_name',
+
+        'club_photo_URL',
+
+        'club_bio'
+
+      ]);
+
+    }
+
+
+    // Allow anyone to read from the 'posts' collection.
+
+    // To create a post, the user must be authenticated, the club_id must exist,
+
+    // and the user's club_key must match the post's club_id.
+
+    match /posts/{postId} {
+
+      allow read: if true;
+
+      allow create: if
+
+        request.resource.data.keys().hasOnly([
+
+          'club_id',
+
+          'event_date',
+
+          'event_location_URL',
+
+          'event_placeholder',
+
+          'photo_URL',
+
+          'post_caption'
+
+        ]) &&
+
+        exists(/databases/$(database)/documents/clubs/$(request.resource.data.club_id)) &&
+
+        request.auth != null &&
+
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_key == request.resource.data.club_id;
+
+    }
+
+
+    // Rules for the 'users' collection:
+
+    match /users/{userId} {
+
+      // Users can read any user document if authenticated (for search functionality)
+      allow read: if request.auth != null;
+
+      // Users can only read their own user document (original rule, now redundant but kept for clarity)
+      // allow read: if request.auth != null && request.auth.uid == userId;
+
+
+      // When a user signs in and their document is created,
+
+      // the document ID must be their UID and it must contain ONLY the specified fields.
+
+      allow create: if
+
+        request.auth != null &&
+
+        request.auth.uid == userId &&
+
+        request.resource.data.keys().hasOnly([
+
+          'club_key',
+
+          'club_rank',
+
+          'following_clubs',
+
+          'liked_posts',
+
+          'name',
+
+          'profile_photo_URL'
+
+        ]);
+
+
+      // Users can update their own user document, but only for the specified fields.
+
+      // The 'club_key' cannot be changed during an update to prevent users from switching clubs.
+
+      allow update: if
+
+          request.auth != null &&
+
+          request.auth.uid == userId &&
+
+          request.resource.data.club_key == resource.data.club_key && // Prevents changing club_key on update
+
+          request.resource.data.keys().hasOnly([
+
+            'club_key',
+
+            'club_rank',
+
+            'following_clubs',
+
+            'liked_posts',
+
+            'name',
+
+            'profile_photo_URL'
+
+          ]);
+
+    }
+
+  }
+
+}
