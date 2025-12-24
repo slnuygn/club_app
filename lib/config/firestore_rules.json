@@ -24,6 +24,11 @@ service cloud.firestore {
 
       ]);
 
+      allow update: if
+        request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_key == clubId &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_rank == 'President';
+
     }
 
 
@@ -139,6 +144,8 @@ service cloud.firestore {
 
           'name',
 
+          'notifications',
+
           'profile_photo_URL'
 
         ]);
@@ -146,27 +153,21 @@ service cloud.firestore {
 
       // Users can update their own user document, but only for the specified fields.
 
-      // The 'club_key' cannot be changed during an update to prevent users from switching clubs.
-
       allow update: if
 
           request.auth != null &&
 
           request.auth.uid == userId &&
 
-          request.resource.data.club_key == resource.data.club_key && // Prevents changing club_key on update
-
-          request.resource.data.keys().hasOnly([
-
-            'club_key',
-
-            'club_rank',
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
 
             'following_clubs',
 
             'liked_posts',
 
             'name',
+
+            'notifications',
 
             'profile_photo_URL'
 
@@ -185,7 +186,7 @@ service cloud.firestore {
 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.club_rank in ['President', 'Co-President', 'Board'] &&
 
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['club_key', 'club_rank']);
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['club_key', 'club_rank', 'notifications']);
 
     }
 

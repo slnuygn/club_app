@@ -23,6 +23,7 @@ class _SearchPageState extends State<SearchPage> {
   bool _isLoadingUsers = false;
   bool _usersLoaded = false;
   String _searchType = 'club'; // 'club' or 'user'
+  Set<String> _followedClubs = {};
 
   @override
   void initState() {
@@ -46,10 +47,45 @@ class _SearchPageState extends State<SearchPage> {
           .doc(user.uid)
           .get();
       if (userDoc.exists) {
+        final data = userDoc.data()!;
         setState(() {
-          _userClubRank = userDoc.data()?['club_rank'] as String?;
-          _currentUserClubKey = userDoc.data()?['club_key'] as String?;
+          _userClubRank = data['club_rank'] as String?;
+          _currentUserClubKey = data['club_key'] as String?;
+          _followedClubs = Set.from(data['following_clubs'] ?? []);
         });
+      }
+    }
+  }
+
+  Future<void> _toggleFollowClub(String clubId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      if (_followedClubs.contains(clubId)) {
+        _followedClubs.remove(clubId);
+      } else {
+        _followedClubs.add(clubId);
+      }
+    });
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'following_clubs': _followedClubs.toList()},
+      );
+    } catch (e) {
+      // Revert on error
+      setState(() {
+        if (_followedClubs.contains(clubId)) {
+          _followedClubs.remove(clubId);
+        } else {
+          _followedClubs.add(clubId);
+        }
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update follow status: $e')),
+        );
       }
     }
   }
@@ -72,6 +108,7 @@ class _SearchPageState extends State<SearchPage> {
           userAvatarUrl: data['profile_photo_URL'] ?? '',
           userId: doc.id,
           clubKey: data['club_key'],
+          clubRank: data['club_rank'],
         );
       }).toList();
 
@@ -106,6 +143,7 @@ class _SearchPageState extends State<SearchPage> {
           clubName: clubName,
           clubAvatarUrl: data['club_photo_URL'] ?? '',
           clubId: doc.id,
+          clubBio: data['club_bio'] ?? '',
         );
       }).toList();
 
@@ -327,6 +365,11 @@ class _SearchPageState extends State<SearchPage> {
                               final clubData = _clubSearchResults[index];
                               return ClubSearchItem(
                                 data: clubData,
+                                isFollowing: _followedClubs.contains(
+                                  clubData.clubId,
+                                ),
+                                onFollowToggle: () =>
+                                    _toggleFollowClub(clubData.clubId),
                                 onTap: () {
                                   // Handle club selection
                                   print('Selected club: ${clubData.clubName}');
@@ -348,6 +391,8 @@ class _SearchPageState extends State<SearchPage> {
                                 isCurrentUser: isCurrentUser,
                                 onMenuAction: _handleMenuAction,
                                 currentUserClubKey: _currentUserClubKey,
+                                currentUserRank: _userClubRank,
+                                targetUserRank: userData.clubRank,
                               );
                             }
                           },
