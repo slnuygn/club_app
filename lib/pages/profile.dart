@@ -9,6 +9,7 @@ import '../widgets/post.dart';
 import '../widgets/tab_manage.dart';
 import '../widgets/club_search.dart';
 import '../widgets/notification.dart';
+import '../widgets/club_profile.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -371,37 +372,53 @@ class _ProfilePageState extends State<ProfilePage>
                                   runSpacing: 16,
                                   children: clubs
                                       .map(
-                                        (club) => Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 40,
-                                              backgroundImage:
-                                                  club.clubAvatarUrl.isNotEmpty
-                                                  ? NetworkImage(
-                                                      club.clubAvatarUrl,
-                                                    )
-                                                  : null,
-                                              backgroundColor: Colors.grey,
-                                              child: club.clubAvatarUrl.isEmpty
-                                                  ? const Icon(
-                                                      Icons.group,
-                                                      color: Colors.white,
-                                                    )
-                                                  : null,
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              club.clubName,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
+                                        (club) => GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ClubProfile(
+                                                      clubId: club.clubId,
+                                                    ),
                                               ),
-                                              textAlign: TextAlign.center,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
+                                            );
+                                          },
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 40,
+                                                backgroundImage:
+                                                    club
+                                                        .clubAvatarUrl
+                                                        .isNotEmpty
+                                                    ? NetworkImage(
+                                                        club.clubAvatarUrl,
+                                                      )
+                                                    : null,
+                                                backgroundColor: Colors.grey,
+                                                child:
+                                                    club.clubAvatarUrl.isEmpty
+                                                    ? const Icon(
+                                                        Icons.group,
+                                                        color: Colors.white,
+                                                      )
+                                                    : null,
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                club.clubName,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 14,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       )
                                       .toList(),

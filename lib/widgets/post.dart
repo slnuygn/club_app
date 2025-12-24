@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:readmore/readmore.dart';
+import 'club_profile.dart';
 
 /// Encapsulates the mutable content for a post card so callers can render
 /// multiple cards by supplying only post-specific data.
@@ -86,12 +87,23 @@ class _PostCardState extends State<PostCard> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: avatarRadius,
-                    backgroundImage: widget.data.communityAvatarUrl.isNotEmpty
-                        ? NetworkImage(widget.data.communityAvatarUrl)
-                        : null,
-                    backgroundColor: Colors.white,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ClubProfile(clubId: widget.data.clubId),
+                        ),
+                      );
+                    },
+                    child: CircleAvatar(
+                      radius: avatarRadius,
+                      backgroundImage: widget.data.communityAvatarUrl.isNotEmpty
+                          ? NetworkImage(widget.data.communityAvatarUrl)
+                          : null,
+                      backgroundColor: Colors.white,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Column(
@@ -99,13 +111,24 @@ class _PostCardState extends State<PostCard> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            widget.data.communityName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              height: 2,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ClubProfile(clubId: widget.data.clubId),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              widget.data.communityName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                height: 2,
+                              ),
                             ),
                           ),
                           const Text(

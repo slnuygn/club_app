@@ -3,13 +3,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Club {
   final String name;
   final String photoUrl;
+  final String clubBio;
 
-  Club({required this.name, required this.photoUrl});
+  Club({required this.name, required this.photoUrl, required this.clubBio});
 
   factory Club.fromFirestore(Map<String, dynamic> data) {
     return Club(
       name: data['club_name'] ?? '',
       photoUrl: data['club_photo_URL'] ?? '',
+      clubBio: data['club_bio'] ?? '',
     );
   }
 }

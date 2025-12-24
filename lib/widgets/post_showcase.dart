@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'club_profile.dart';
 
 /// Holds the dynamic data for a showcase card so callers supply only
 /// content that varies between posts.
@@ -10,6 +11,7 @@ class PostShowcaseData {
     required this.postCaption,
     required this.dateDisplay,
     required this.placeDisplay,
+    required this.clubId,
   });
 
   final String backgroundImageUrl;
@@ -18,6 +20,7 @@ class PostShowcaseData {
   final String postCaption;
   final String dateDisplay;
   final String placeDisplay;
+  final String clubId;
 }
 
 /// Renders a fully styled showcase card including background imagery,
@@ -108,12 +111,23 @@ class PostShowcase extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    CircleAvatar(
-                      radius: avatarRadius,
-                      backgroundImage: data.communityAvatarUrl.isNotEmpty
-                          ? NetworkImage(data.communityAvatarUrl)
-                          : null,
-                      backgroundColor: Colors.white24,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ClubProfile(clubId: data.clubId),
+                          ),
+                        );
+                      },
+                      child: CircleAvatar(
+                        radius: avatarRadius,
+                        backgroundImage: data.communityAvatarUrl.isNotEmpty
+                            ? NetworkImage(data.communityAvatarUrl)
+                            : null,
+                        backgroundColor: Colors.white24,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -122,12 +136,23 @@ class PostShowcase extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            data.communityName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              height: 1,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ClubProfile(clubId: data.clubId),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              data.communityName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                height: 1,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 3),

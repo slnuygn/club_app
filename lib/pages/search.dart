@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/club_search.dart';
 import '../widgets/user_search.dart';
+import '../widgets/club_profile.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -371,8 +372,13 @@ class _SearchPageState extends State<SearchPage> {
                                 onFollowToggle: () =>
                                     _toggleFollowClub(clubData.clubId),
                                 onTap: () {
-                                  // Handle club selection
-                                  print('Selected club: ${clubData.clubName}');
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          ClubProfile(clubId: clubData.clubId),
+                                    ),
+                                  );
                                 },
                               );
                             } else {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'club_profile.dart';
 
 /// Data class for club search item
 class ClubSearchData {
@@ -53,7 +54,16 @@ class _ClubSearchItemState extends State<ClubSearchItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap:
+          widget.onTap ??
+          () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ClubProfile(clubId: widget.data.clubId),
+              ),
+            );
+          },
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

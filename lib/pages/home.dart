@@ -101,6 +101,7 @@ class _HomePageState extends State<HomePage> {
             'MMM d, yyyy · h:mm a',
           ).format(post.eventDate),
           placeDisplay: post.eventPlaceholder,
+          clubId: '',
         );
 
         final postCardData = PostCardData(
