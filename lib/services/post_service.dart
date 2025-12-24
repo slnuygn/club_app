@@ -3,7 +3,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../models/post_data.dart';
 
 class PostService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+  final FirebaseStorage _storage;
+
+  PostService({FirebaseFirestore? firestore, FirebaseStorage? storage})
+    : _firestore = firestore ?? FirebaseFirestore.instance,
+      _storage = storage ?? FirebaseStorage.instance;
 
   // Helper method to convert gs:// URLs to HTTPS download URLs
   Future<String> _convertGsUrlToHttps(String gsUrl) async {
@@ -20,7 +25,7 @@ class PostService {
       final filePath = parts.sublist(1).join('/');
 
       // Get download URL from Firebase Storage
-      final ref = FirebaseStorage.instance.ref(filePath);
+      final ref = _storage.ref(filePath);
       return await ref.getDownloadURL();
     } catch (e) {
       print('Error converting gs:// URL: $e');
