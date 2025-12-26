@@ -311,7 +311,7 @@ Both widgets keep data-heavy logic out of their builds: UI is kept local and qui
 \section{API \& Stress Testing}
 \subsection{API Unit Tests}
 
-The repository contains a focused suite of unit tests that validate the behavior of core service classes without requiring live Firebase services. The test file \texttt{test/api\_test.dart} instantiates service objects using lightweight fakes and mocks:
+The repository contains a focused suite of unit tests that validate the behavior of core service classes without requiring live Firebase services. The unit test file \texttt{test/api\_test\_mockup.dart} instantiates service objects using lightweight fakes and mocks:
 
 \begin{itemize}
     \item Uses \texttt{fake\_cloud\_firestore} to provide an in-memory Firestore implementation for deterministic reads/writes.
@@ -332,7 +332,7 @@ Notes and recommendations:
 \begin{itemize}
     \item These tests are fast and reliable because they avoid network I/O; they exercise service logic and Firestore mappings.
     \item Consider adding negative and edge-case tests (missing fields, malformed URLs, permission-denied scenarios) and tests that simulate storage URL rewriting behavior.
-    \item To run: \texttt{flutter test test/api\_test.dart}.
+    \item To run: \texttt{flutter test test/api\_test\_mockup.dart}.
 \end{itemize}
 
 \subsection{Stress and Microbenchmarks}
@@ -363,10 +363,46 @@ Limitations and suggestions:
 
 How to run these benchmarks:
 \begin{verbatim}
-flutter test test/api_test.dart
+flutter test test/api_test_mockup.dart
 flutter test test/stress_test.dart
 \end{verbatim}
 
 Together, these files provide both unit-level correctness checks for API-layer logic and practical developer-facing benchmarks to spot regressions in parsing, collection processing, and allocation patterns.
+
+\subsection{Real Firebase API Tests (\texttt{test/api\_test\_real.dart})}
+
+For completeness, the repository includes \texttt{test/api\_test\_real.dart}, which attempts to exercise the real Firebase Cloud Firestore and Storage APIs from a test harness. This file mirrors the unit-test scenarios (connectivity checks, CRUD on posts/clubs, likes/follows, query filters, stress/bulk operations) but targets the actual backend instead of fakes.
+
+\paragraph{Platform constraint.} Running \texttt{flutter test} on the Dart VM does not provide a device or platform channels required by Firebase plugins. As a result, real API tests will typically fail with errors such as:
+\begin{itemize}
+    \item \texttt{[core/no-app] No Firebase App '[DEFAULT]' has been created}
+    \item \texttt{PlatformException(channel-error, Unable to establish connection ...)}
+\end{itemize}
+These errors stem from plugin initialization not being available in a pure VM context. Real API tests should run on a device/emulator using the integration test framework.
+
+\paragraph{Recommended approach.} We provide a device-based counterpart at \texttt{integration\_test/api\_integration\_test.dart}. It initializes Firebase via \texttt{IntegrationTestWidgetsFlutterBinding} and \texttt{Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)}, then executes the same scenarios against the live backend, cleaning up documents created in \texttt{users}, \texttt{clubs}, and \texttt{posts}.
+
+\subsection{Test README Summary}
+
+The test folder includes a \texttt{README.md} that distinguishes unit vs. integration tests and provides run instructions:
+\begin{itemize}
+    \item \textbf{Prerequisites:} Flutter SDK; Firebase configured (\texttt{lib/firebase\_options.dart}, Android \texttt{google-services.json}); network connectivity; an Android emulator or device for integration tests.
+    \item \textbf{Run unit tests (VM):}
+    \begin{verbatim}
+    flutter test test
+    flutter test test/api_test_mockup.dart
+    flutter test test/stress_test.dart
+    \end{verbatim}
+    \item \textbf{Run real Firebase integration tests (device/emulator):}
+    \begin{verbatim}
+    flutter pub get
+    flutter devices
+    flutter test integration_test/api_integration_test.dart -d <deviceId>
+    \end{verbatim}
+    \item \textbf{Optional emulator:} To avoid touching production data, point Firestore to the emulator in test setup with \texttt{FirebaseFirestore.instance.useFirestoreEmulator(host, port)}.
+    \item \textbf{Cleanup and troubleshooting:} Integration tests delete created documents; if a run aborts, leftover test docs can be removed safely. Errors like \texttt{channel-error} or \texttt{no-app} indicate tests were run in the VM instead of on a device; use the integration test.
+\end{itemize}
+
+This structure ensures fast, deterministic unit-level coverage (using fakes) and faithful end-to-end validation (using device-based integration tests) while making the operational differences explicit for developers.
 
 \end{document}

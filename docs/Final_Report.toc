@@ -28,3 +28,7 @@
 \contentsline {section}{\numberline {4}API \& Stress Testing}{9}{section.4}%
 \contentsline {subsection}{\numberline {4.1}API Unit Tests}{9}{subsection.4.1}%
 \contentsline {subsection}{\numberline {4.2}Stress and Microbenchmarks}{9}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Real Firebase API Tests (\texttt {test/api\_test\_real.dart})}{10}{subsection.4.3}%
+\contentsline {paragraph}{Platform constraint.}{10}{section*.2}%
+\contentsline {paragraph}{Recommended approach.}{11}{section*.3}%
+\contentsline {subsection}{\numberline {4.4}Test README Summary}{11}{subsection.4.4}%
