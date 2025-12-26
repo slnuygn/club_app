@@ -1,0 +1,372 @@
+% A Final Report for Huddle: School Communities App
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage{listings}
+
+\lstdefinelanguage{dart}{
+  keywords={abstract, as, assert, async, await, break, case, catch, class, const, continue, default, deferred, do, dynamic, else, enum, export, extends, external, factory, false, final, finally, for, get, if, implements, import, in, is, library, new, null, operator, part, rethrow, return, set, static, super, switch, sync, this, throw, true, try, typedef, var, void, while, with},
+  morekeywords={int, double, String, bool, List, Map},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]',
+}
+
+\title{A Final Report for Huddle: School Communities App}
+\author{Selin Uygun}
+\date{December 24, 2025}
+
+\begin{document}
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\LARGE \bfseries A Final Report for Huddle: School Communities App\par}
+    \vspace{1.5cm}
+    {\Large Selin Uygun\par}
+    \vfill
+    {\large December 24, 2025\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{What is Huddle?}
+
+Huddle is a mobile-first platform for school communities that makes it easy for students and staff to form clubs, manage membership and roles, publish events, and stay informed. It combines a lightweight social feed with structured club administration tools so communities can both promote activity and keep operations manageable.
+
+Core aims:
+\begin{itemize}
+    \item Connect students with interest-based clubs and events quickly and discoverably.
+    \item Reduce administrative overhead for club officers via role-based tools and simple workflows.
+    \item Provide a reliable, real-time feed of events and announcements with clear moderation controls.
+    \item Respect privacy and safety through scoped permissions and consultative notification flows.
+\end{itemize}
+
+Key features and workflows:
+\begin{itemize}
+    \item \textbf{Club management:} Create clubs with metadata (name, avatar, bio); maintain member lists and officer roles (President, Co-President, Board); promote/demote members with controlled permissions; and manage visibility and basic club settings.
+    \item \textbf{Events:} Board members can create event posts (date, location, assets), submit them for approval where required, and publish to the club's profile and the global feed. RSVP and save interactions are supported to measure interest.
+    \item \textbf{Membership and discovery:} Users can search for clubs and people, follow clubs to surface them in feeds, and request or be granted membership. Discovery is supported by search, profiles, and curated showcases.
+    \item \textbf{Moderation and notifications:} Administrative actions (approve/reject posts, change ranks, revoke membership) produce notification events for transparency. The UI provides snackbars and in-app notifications to give immediate user feedback while writes persist to the backend.
+    \item \textbf{Design principles:} Prioritise fast, responsive UI (optimistic updates), clear affordances for administrators vs. ordinary members, and accessibility across device sizes.
+\end{itemize}
+
+Technical foundation:
+\begin{itemize}
+    \item Built with Flutter for a cross-platform mobile experience.
+    \item Uses Firebase (Firestore, Authentication, Storage) for real-time data, auth, and media hosting.
+    \item Architectural focus on small, testable services (e.g., \texttt{PostService}, \texttt{UserService}) so UI widgets can remain lightweight and composable.
+\end{itemize}
+
+\section{Pages Overview}
+
+
+\subsection{Home Page}
+
+The Home Page serves as the primary entry point for the user, acting as a dynamic feed for event discovery. It is implemented as a \texttt{StatefulWidget} to manage the asynchronous lifecycle of data fetching from Firebase.
+
+\subsubsection{Core Contents and Components}
+The UI is divided into two distinct sections to prioritize immediate engagement:
+\begin{itemize}
+    \item \textbf{Today's Events (Showcase):} A horizontal carousel implemented via the \texttt{PostShowcase} widget. It highlights events occurring on the current calendar date.
+    \item \textbf{Popular Events Feed:} A vertical list of \texttt{PostCard} widgets displaying all approved upcoming events within the community.
+    \item \textbf{Refresh Mechanism:} Wrapped in a \texttt{RefreshIndicator}, allowing users to trigger the \texttt{\_fetchData()} method manually to update the feed.
+\end{itemize}
+
+\subsubsection{Logic and Functional Workflows}
+The logic within \texttt{home.dart} focuses on data synchronization and state consistency:
+
+\begin{description}
+    \item[Asynchronous Data Fetching:] Upon initialization (\texttt{initState}), the page invokes a private method \texttt{\_fetchData()}. This method coordinates multiple calls to the \texttt{PostService} and \texttt{UserService} to retrieve:
+    \begin{enumerate}
+        \item A list of all approved posts.
+        \item The current user's set of liked post IDs.
+        \item The list of clubs/communities the user is currently following.
+    \end{enumerate}
+    
+    \item[Date-Based Filtering:] To populate the Showcase section, the page applies a filter on the retrieved posts:
+    \lstinline[language=dart]|posts.where((p) => isSameDay(p.eventDate, DateTime.now())).toList()|. This ensures that only relevant, time-sensitive content appears at the top of the feed.
+
+    \item[Optimistic UI State Management:] For interactions like "Favoriting" a post or "Following" a club, the page utilizes optimistic updates. When a user toggles a favorite:
+    \begin{itemize}
+        \item The local \texttt{likedPosts} set is updated immediately.
+        \item \texttt{setState()} is called to reflect the change in the UI.
+        \item An asynchronous call to \texttt{PostService.toggleLike()} is made in the background to persist the change in Firestore.
+    \end{itemize}
+    
+    \item[Navigation Logic:] The page handles deep navigation to post details and community profiles, passing the necessary \texttt{PostData} objects to maintain context without redundant API calls.
+\end{description}
+
+\subsection{Search Page}
+
+The Search Page provides a unified interface for locating both user profiles and community organizations. It leverages a tabbed navigation system to separate different search domains while maintaining a consistent query interface.
+
+\subsubsection{Core Contents and Components}
+The Search Page structure is designed around a \texttt{DefaultTabController} and consists of:
+\begin{itemize}
+    \item \textbf{Search Header:} A persistent top section containing a \texttt{TextField} for input, stylized with a custom \texttt{InputDecoration} and a search icon.
+    \item \textbf{Categorical Tabs:} A \texttt{TabBar} with two primary sections: ``Communities'' and ``Users''. This provides a clear semantic separation for the user's intent.
+    \item \textbf{Dynamic Results View:} A \texttt{TabBarView} that swaps between the \texttt{ClubSearch} and \texttt{UserSearch} widgets. These specialized widgets handle the rendering logic for their respective data types.
+\end{itemize}
+
+\subsubsection{Logic and Functional Workflows}
+The logic in \texttt{search.dart} emphasizes efficient query propagation and UI responsiveness:
+
+\begin{description}
+    \item[Query State Management:] The page utilizes a \texttt{TextEditingController} to track user input. To ensure that child widgets remain synchronized with the query, the input is passed down as a parameter or managed through state updates whenever the text changes.
+    
+    \item[Delegated Searching:] Rather than performing all search logic in a single file, \texttt{search.dart} acts as a router or coordinator. 
+    \begin{itemize}
+        \item When the ``Communities'' tab is active, the \texttt{ClubSearch} widget is responsible for querying the \texttt{CommunityService} or Firestore collection.
+        \item When the ``Users'' tab is active, the \texttt{UserSearch} widget interfaces with the \texttt{UserService}.
+    \end{itemize}
+
+    \item[Performance Considerations:] The implementation focuses on reducing unnecessary builds. By separating the search views into their own widgets (\texttt{ClubSearch} and \texttt{UserSearch}), only the relevant portion of the tree is rebuilt as the user types or switches tabs.
+
+    \item[UI Aesthetics:] The page maintains design consistency with the rest of the application, utilizing custom colors for tab indicators and ensuring a responsive layout that scales across different screen dimensions.
+\end{description}
+
+\subsection{Favorite Page}
+
+The Saved Page acts as a personal archive for users, displaying a curated list of events they have previously marked with a "like" or "save" interaction.
+
+\subsubsection{Core Contents and Components}
+The interface is designed for simplicity and focuses on high-intent content:
+\begin{itemize}
+    \item \textbf{Saved Events List:} A vertical \texttt{ListView} populated by \texttt{PostCard} widgets. This maintains visual parity with the Home Page feed to ensure a consistent user experience.
+    \item \textbf{Empty State Handler:} A conditional rendering block that displays a friendly message (e.g., ``No saved events yet'') when the user's liked collection is empty, preventing a blank screen.
+    \item \textbf{Pull-to-Refresh:} Integrated via \texttt{RefreshIndicator} to allow users to synchronize their saved list with the latest database state manually.
+\end{itemize}
+
+\subsubsection{Logic and Functional Workflows}
+The logic in \texttt{saved.dart} revolves around user-specific data filtering and real-time synchronization:
+
+\begin{description}
+    \item[User-Centric Data Retrieval:] Unlike the Home Page, which fetches all approved posts, \texttt{saved.dart} performs a targeted query. It typically interfaces with \texttt{PostService.getLikedPosts(userId)} to retrieve only the documents that the current authenticated user has interacted with.
+    
+    \item[Post State Synchronization:] Because a user can "unlike" a post directly from the Saved Page, the logic must handle list modification. When a post is unliked, the page should remove the item from the local list and trigger \texttt{setState()} to reflect the change immediately.
+    
+    \item[Dependency on Auth State:] The page is heavily dependent on a valid \texttt{userId}. It includes logic to ensure that data is only fetched once the Firebase Authentication state is confirmed, preventing null pointer exceptions during the initial build cycle.
+\end{description}
+
+\subsection{Profile Page}
+
+
+The Profile Page is a comprehensive module that manages user identity, social statistics, and the display of user-contributed content. It is designed to be polymorphic, handling both the current user's own profile and public views of other users' profiles.
+
+\subsubsection{Core Contents and Components}
+The layout follows a standard social media architecture:
+\begin{itemize}
+    \item \textbf{Header Section:} Displays the user's \texttt{CircleAvatar}, display name, and a short bio. It also includes a statistics row showing counts for ``Posts'', ``Followers'', and ``Following''.
+    \item \textbf{Action Buttons:} Dynamically switches between an ``Edit Profile'' or ``Logout'' button (for the owner) and a ``Follow/Unfollow'' toggle (for visitors).
+    \item \textbf{Tabbed Content View:} Utilizes a \texttt{TabBar} to toggle between:
+    \begin{enumerate}
+        \item \textbf{My Posts:} A grid or list showing events created or managed by the user.
+        \item \textbf{My Communities:} A list of clubs and organizations the user is a member of or follows.
+    \end{enumerate}
+\end{itemize}
+
+\subsubsection{Logic and Functional Workflows}
+The \texttt{profile.dart} logic coordinates complex state transitions and external service calls:
+
+\begin{description}
+    \item[Polymorphic Profile Loading:] The widget often accepts an optional \texttt{targetUserId}. If null, it defaults to \texttt{auth.currentUser.uid}. The \texttt{\_fetchUserData()} method then branches its logic to fetch specific profile details and permissions based on this ID.
+    
+    \item[Profile Editing Logic:] When in ``Edit Mode'', text fields replace static labels. The page manages the state of these inputs and coordinates with \texttt{UserService.updateProfile()} to persist changes. It also handles image picking logic for updating profile pictures via the \texttt{image\_picker} plugin.
+    
+    \item[Social Interaction Management:] The follow/unfollow logic utilizes an optimistic update pattern similar to the Home Page. It modifies the local follower count and button state immediately while sending a request to the \texttt{UserService} to update the Firestore relationship documents.
+
+    \item[Post Management:] For the owner, this page serves as a management hub. It provides entry points to edit or delete existing posts, leveraging the \texttt{PostService} to handle deletions and ensuring the UI is refreshed upon completion.
+\end{description}
+
+\section{Main Widgets}
+
+\subsection{Management Tab}
+
+
+The \texttt{tab\_manage.dart} widget implements the administrative backbone of the community module. From an architectural perspective, it serves as a Role-Based Access Control (RBAC) hub, where the application's logic branches significantly depending on the user's specific rank within a club's hierarchy.
+
+\subsubsection{Hierarchical Rank Definitions}
+The system distinguishes between three primary administrative tiers: President, Co-President, and Board. These ranks are not merely labels but are tied to specific permission sets defined in the backend schema:
+
+\begin{itemize}
+    \item \textbf{President:} The supreme administrative authority. This rank possesses destructive permissions (e.g., deleting the community) and exclusive rights to modify the highest-level metadata and executive appointments.
+    \item \textbf{Co-President:} A secondary executive tier. While possessing nearly identical functional capabilities to the President regarding content and member management, the Co-President is restricted from modifying the status of the President or dissolving the organization.
+    \item \textbf{Board Member:} The foundational administrative tier. Board members typically handle operational tasks, such as moderating pending posts or viewing member lists, but lack the authority to modify organizational structures or executive ranks.
+\end{itemize}
+
+\subsubsection{Differential User Experiences and Functional Logic}
+The technical implementation of \texttt{tab\_manage.dart} ensures that the "experience" of the application is contextually adapted to the user's authority level through conditional widget rendering and state gating:
+
+\begin{description}
+    \item[The Management Dashboard:]
+    For \textbf{Presidents} and \textbf{Co-Presidents}, the interface exposes sensitive settings. This includes the ``Edit Community'' view, where they can update logos, descriptions, and visibility. The code utilizes conditional logic to verify rank before displaying the \texttt{ListTile} associated with executive settings.
+    
+    \item[Promotion and Demotion Logic:]
+    A critical differentiator exists in member management. The logic within the member list view allows a \textbf{President} to promote a member to \textbf{Co-President}. However, if the current user is a \textbf{Co-President}, the UI logic restricts them from promoting others to their own level or demoting the President, effectively enforcing a "ceiling" of authority.
+
+    \item[Content Moderation Workflows:]
+    All three ranks share the "Pending Posts" experience. The widget fetches a stream of posts with a status of \texttt{pending}. Technically, this is implemented via a \texttt{StreamBuilder} that listens to a specific Firestore query. Any administrative user can approve or reject these posts, triggering the \texttt{PostService.updateStatus()} method.
+    
+    \item[Data Integrity and Security:]
+    From a security standpoint, \texttt{tab\_manage.dart} acts as a front-end guard. While the UI hides buttons based on rank, the underlying services (such as \texttt{UserService}) require the rank to be passed as a parameter to ensure that the backend validates the request against the user's actual document in the \texttt{members} sub-collection.
+\end{description}
+
+\subsubsection{Technical Implementation of Rank Checks}
+The widget maintains a \texttt{String currentUserRank} state variable. Upon loading, it synchronizes with the database:
+\lstset{language=dart}
+\begin{lstlisting}
+// Pseudocode of the rank-checking logic
+if (currentUserRank == 'President') {
+  _showExecutiveSettings();
+} else if (currentUserRank == 'Co-President' || currentUserRank == 'Board') {
+  _showOperationalTools();
+}
+\end{lstlisting}
+This categorical check ensures that the cognitive load on lower-ranked administrators is reduced by hiding irrelevant executive tools, while maintaining strict security for high-level operations.
+
+
+\subsection{Club Profile}
+
+
+The \texttt{club\_profile.dart} module functions as the public-facing landing page for individual communities. It is technically distinct from the management tab as it focuses on social engagement, public metadata display, and membership conversion.
+
+\subsubsection{Architectural Components}
+The widget is structured as a \texttt{Sliver}-based layout to provide a professional, collapsing header effect common in modern mobile interfaces:
+\begin{itemize}
+    \item \textbf{SliverAppBar:} Contains the community's banner image and logo, which remains visible while scrolling to maintain brand identity.
+    \item \textbf{Engagement Metadata:} A statistics block displaying the member count and total events, acting as social proof for prospective members.
+    \item \textbf{Membership Toggle:} A contextual primary action button. If the user is a non-member, it displays ``Join''; if they are already a member, it provides access to the management dashboard or an ``Exit Community'' option.
+\end{itemize}
+
+\subsubsection{Technical Logic and State Transitions}
+The complexity of \texttt{club\_profile.dart} lies in its real-time reactivity to membership changes:
+
+\begin{description}
+    \item[Reactive Membership Streams:] The widget utilizes a \texttt{StreamBuilder} to listen to the specific membership sub-collection in Firestore. This ensures that when a user taps ``Join'', the UI updates the member count and button state instantly across all instances of the application.
+    
+    \item[Rank-Based Action Routing:] The logic for the primary action button is branched. If the \texttt{UserService} identifies the user as an administrator (\texttt{President}, \texttt{Co-President}, or \texttt{Board}), the button navigates to the \texttt{TabManage} widget. For standard members, it handles general interaction.
+
+    \item[Content Partitioning:] The feed displayed on the profile is restricted to posts where the \texttt{communityId} matches the current profile. This involves a filtered Firestore query:
+    \lstset{language=dart}
+    \begin{lstlisting}
+    // Logic for club-specific feed retrieval
+    Query clubPosts = firestore.collection('posts')
+                      .where('communityId', isEqualTo: targetClubId)
+                      .orderBy('timestamp', descending: true);
+    \end{lstlisting}
+    
+    \item[Experience Differentiators:] The "Experience Gating" architecture fundamentally alters user interaction based on membership state. A non-member's experience is restricted to content consumption and metadata observation. Upon joining, the transition to a member experience is managed by a transactional Firestore update, ensuring atomic synchronization between the user profile and the club document to maintain data integrity.
+\end{description}
+
+\subsection{Notifications}
+
+
+The notification system provides a critical feedback loop within the application, ensuring that users remain informed of relevant organizational updates and social interactions. The system is implemented through a centralized \texttt{Notification} model and the \texttt{notification.dart} widget.
+
+\subsubsection{Categorization of Notifications}
+The system distinguishes between several objective notification types, each mapped to specific data schemas in the \texttt{notifications} collection:
+\begin{itemize}
+    \item \textbf{Event Approval/Rejection:} Sent to users after a board member or president moderates a submitted post.
+    \item \textbf{Rank Promotion:} Alerts a member when their administrative status is escalated (e.g., from Member to Board).
+    \item \textbf{Community Updates:} General broadcasts regarding changes to a club's metadata or important announcements.
+    \item \textbf{Social Interactions:} Notifications triggered by new followers or interactions with saved events.
+\end{itemize}
+
+\subsubsection{Administrative Triggers in \texttt{tab\_manage.dart}}
+The \texttt{tab\_manage.dart} widget serves as the primary origin for administrative notifications. When high-level actions are performed, notification calls are integrated directly into the transaction logic:
+
+\begin{description}
+    \item[Moderation Feedback:] Upon approving or rejecting a pending post, \texttt{tab\_manage.dart} invokes a notification trigger. This informs the original poster of the outcome. Objectively, this involves an \texttt{addDoc} operation to the recipient user's \texttt{notifications} sub-collection containing the \texttt{postId} and \texttt{status}.
+    
+    \item[Rank Escalation Alerts:] When a President or Co-President promotes a member, the logic calls a utility function to generate a promotion notification. This notification is essential for informing the user that their UI has transitioned from a standard member view to the administrative \texttt{TabManage} view.
+    
+    \item[Technical Workflow:] These calls are structured as asynchronous background tasks. The UI in \texttt{tab\_manage.dart} provides immediate feedback to the administrator, while the notification document is propagated to the target user's feed.
+\end{description}
+
+\subsubsection{UI Presentation and State Handling}
+In \texttt{notification.dart}, the system utilizes a \texttt{FirestoreListView} (or \texttt{StreamBuilder}) to display alerts in reverse-chronological order. Each notification item is technically a stateless widget that renders an icon based on the \texttt{type} field, a timestamp, and a deep-link capability that allows users to navigate directly to the relevant event or profile upon interaction.
+
+
+\subsection{Users and Clubs in Search}
+
+This subsection summarises the two compact row widgets used by the Search Page.
+
+\begin{itemize}
+    \item \textbf{User results (\texttt{user\_search.dart}):} A simple row showing a user's avatar and name, with an optional overflow menu. The menu can expose admin actions (revoke/grant membership) that perform small Firestore updates and show quick feedback; report/block currently show a message. The menu hides for the current user and relies on the parent to supply rank/club context.
+
+    \item \textbf{Club results (\texttt{club\_search.dart}):} A row displaying the club avatar, name, a short bio, and a follow toggle. Tapping navigates to the club profile; the follow button updates local UI state immediately and calls a parent callback to persist the change (optimistic update).
+\end{itemize}
+
+Both widgets keep data-heavy logic out of their builds: UI is kept local and quick, while persistence and permission checks are delegated to the surrounding page or services for clarity and testability.
+
+\section{API \& Stress Testing}
+\subsection{API Unit Tests}
+
+The repository contains a focused suite of unit tests that validate the behavior of core service classes without requiring live Firebase services. The test file \texttt{test/api\_test.dart} instantiates service objects using lightweight fakes and mocks:
+
+\begin{itemize}
+    \item Uses \texttt{fake\_cloud\_firestore} to provide an in-memory Firestore implementation for deterministic reads/writes.
+    \item Uses a small fake for \texttt{FirebaseStorage} (a stubbed \texttt{Reference}) so storage-related code can return predictable URLs.
+    \item Uses \texttt{firebase\_auth\_mocks} (\texttt{MockUser}) to simulate authenticated user data in tests.
+\end{itemize}
+
+Key behaviors covered:
+\begin{itemize}
+    \item \texttt{PostService.getPost(postId)}: verifies that posts are read and parsed into the domain \texttt{Post} object with correct fields (club id, caption, photo URL, date).
+    \item \texttt{PostService.getClub(clubId)}: validates retrieval and mapping of club documents to a \texttt{Club} model.
+    \item \texttt{PostService.getAllPosts(state: 'approved')}: integrates posts and their parent club data, asserting the returned combined structure.
+    \item \texttt{PostService.toggleLikePost(userId, postId, currentlyLiked)}: confirms that liking and unliking modify the user's \texttt{liked\_posts} array as expected.
+    \item \texttt{UserService.createUserDocument(user)}: ensures new user documents are created, and existing documents are updated while preserving certain fields (e.g., existing \texttt{club\_rank}).
+\end{itemize}
+
+Notes and recommendations:
+\begin{itemize}
+    \item These tests are fast and reliable because they avoid network I/O; they exercise service logic and Firestore mappings.
+    \item Consider adding negative and edge-case tests (missing fields, malformed URLs, permission-denied scenarios) and tests that simulate storage URL rewriting behavior.
+    \item To run: \texttt{flutter test test/api\_test.dart}.
+\end{itemize}
+
+\subsection{Stress and Microbenchmarks}
+
+The file \texttt{test/stress\_test.dart} implements three microbenchmarks to capture performance characteristics of key operations. The tests are intended as developer-facing reports rather than strict unit tests; they print a human-readable report to stdout.
+
+Scenarios implemented:
+\begin{itemize}
+    \item \textbf{JSON Parsing (10k items):} Generates synthetic raw JSON maps and maps them to \texttt{Post} objects using \texttt{Post.fromFirestore}. A \texttt{Stopwatch} measures the elapsed time and compares it to an "ideal" threshold (300ms by default).
+
+    \item \textbf{List Processing (20k items):} Builds 20k \texttt{Post} objects, filters by club id, and sorts the filtered list by date. This measures CPU cost for common collection operations (filter + sort).
+
+    \item \textbf{Widget Instantiation (50k items):} Allocates many \texttt{PostCard} widgets to measure object creation cost and memory churn. Note: these widgets are created as Dart objects but not mounted into a Flutter widget tree, so this scenario measures allocation cost rather than full render performance.
+\end{itemize}
+
+Output and scoring:
+\begin{itemize}
+    \item Each scenario prints elapsed time, a performance index (ideal/actual), and a colored PASS/WARN status using ANSI escape sequences for quick visual scanning in terminals.
+    \item The tests are useful as quick local benchmarks, but results will vary by machine, VM, and Dart/Flutter runtime configuration.
+\end{itemize}
+
+Limitations and suggestions:
+\begin{itemize}
+    \item The widget-instantiation scenario does not exercise rendering, layout, or rasterization costs. For frame-time and UI performance profiling, prefer instrumented widget tests (\texttt{WidgetTester}) or integration benchmarks (\texttt{flutter\_driver} / \texttt{integration\_test}).
+    \item For more robust performance tracking, consider converting these microbenchmarks into standalone Dart scripts (outside the test harness) and collecting time-series data, or use the Dart Observatory / DevTools for CPU and memory profiling.
+    \item Large counts (20k–50k) may be heavy for CI runners; reduce counts or gate these tests behind a manual flag or an environment variable when running in constrained environments.
+\end{itemize}
+
+How to run these benchmarks:
+\begin{verbatim}
+flutter test test/api_test.dart
+flutter test test/stress_test.dart
+\end{verbatim}
+
+Together, these files provide both unit-level correctness checks for API-layer logic and practical developer-facing benchmarks to spot regressions in parsing, collection processing, and allocation patterns.
+
+\end{document}

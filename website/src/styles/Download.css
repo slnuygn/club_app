@@ -1,0 +1,146 @@
+.download {
+  background: var(--color-tertiary);
+  position: relative;
+  overflow: hidden;
+}
+
+.download-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.download-gradient {
+  position: absolute;
+  top: -50%;
+  left: -20%;
+  width: 100%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(128, 115, 115, 0.2) 0%, transparent 60%);
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.download-content {
+  position: relative;
+  z-index: 1;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.8s ease;
+}
+
+.download-content.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.download-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+  flex-wrap: wrap;
+}
+
+.store-button {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 2rem;
+  background: var(--color-primary);
+  border: 2px solid rgba(128, 115, 115, 0.3);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.store-button:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(128, 115, 115, 0.3);
+}
+
+.store-icon {
+  font-size: 2rem;
+  color: var(--color-text);
+}
+
+.store-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.store-text .small {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.store-text .large {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.download-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.stat {
+  text-align: center;
+  padding: 2rem;
+  background: var(--color-primary);
+  border-radius: 16px;
+  border: 1px solid rgba(128, 115, 115, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat:hover {
+  transform: translateY(-5px);
+  border-color: var(--color-accent);
+}
+
+.stat h3 {
+  font-size: 3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.stat p {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}
+
+@media (max-width: 768px) {
+  .download-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .store-button {
+    justify-content: center;
+  }
+
+  .download-stats {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
+import 'post.dart';
+import 'package:intl/intl.dart';
 
 class TabManage extends StatefulWidget {
   final String clubId;
@@ -407,63 +409,116 @@ class _TabManageState extends State<TabManage> {
                               final doc = docs[index];
                               final data =
                                   doc.data() as Map<String, dynamic>? ?? {};
-                              final title = data['title'] as String? ?? '';
-                              final content = data['content'] as String? ?? '';
-                              return Container(
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1B1B1B),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      title.isNotEmpty ? title : 'Post',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+
+                              // Get club data
+                              final clubId = data['club_id'] as String? ?? '';
+
+                              return FutureBuilder<DocumentSnapshot>(
+                                future: FirebaseFirestore.instance
+                                    .collection('clubs')
+                                    .doc(clubId)
+                                    .get(),
+                                builder: (context, clubSnapshot) {
+                                  if (!clubSnapshot.hasData) {
+                                    return const SizedBox(
+                                      height: 100,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      content,
-                                      style: const TextStyle(
-                                        color: Colors.white70,
+                                    );
+                                  }
+
+                                  final clubData =
+                                      clubSnapshot.data!.data()
+                                          as Map<String, dynamic>? ??
+                                      {};
+
+                                  // Prepare post data for PostCard
+                                  final eventDate =
+                                      data['event_date'] as Timestamp?;
+                                  final dateDisplay = eventDate != null
+                                      ? DateFormat(
+                                          'MMM d, yyyy • h:mm a',
+                                        ).format(eventDate.toDate())
+                                      : '';
+
+                                  final postCardData = PostCardData(
+                                    communityName:
+                                        clubData['club_name'] as String? ?? '',
+                                    communityAvatarUrl:
+                                        clubData['club_photo_URL'] as String? ??
+                                        '',
+                                    location:
+                                        data['event_placeholder'] as String? ??
+                                        '',
+                                    caption:
+                                        data['post_caption'] as String? ?? '',
+                                    dateDisplay: dateDisplay,
+                                    imageUrl:
+                                        data['photo_URL'] as String? ?? '',
+                                    clubId: clubId,
+                                  );
+
+                                  return Stack(
+                                    children: [
+                                      Transform.scale(
+                                        scale: 0.95,
+                                        alignment: Alignment.topCenter,
+                                        child: PostCard(
+                                          data: postCardData,
+                                          isFavorite: false,
+                                          isFollowing: false,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        IconButton(
-                                          onPressed: () => _approvePost(doc.id),
-                                          icon: const Icon(
-                                            Icons.check,
-                                            color: Colors.green,
+                                      Positioned(
+                                        bottom: 8,
+                                        right: 8,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.black87,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
-                                          tooltip: 'Approve',
-                                        ),
-                                        IconButton(
-                                          onPressed: () => _rejectPost(doc.id),
-                                          icon: const Icon(
-                                            Icons.close,
-                                            color: Colors.orange,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                onPressed: () =>
+                                                    _approvePost(doc.id),
+                                                icon: const Icon(
+                                                  Icons.check,
+                                                  color: Colors.green,
+                                                ),
+                                                tooltip: 'Approve',
+                                              ),
+                                              IconButton(
+                                                onPressed: () =>
+                                                    _rejectPost(doc.id),
+                                                icon: const Icon(
+                                                  Icons.close,
+                                                  color: Colors.orange,
+                                                ),
+                                                tooltip: 'Reject',
+                                              ),
+                                              IconButton(
+                                                onPressed: () =>
+                                                    _deletePost(doc.id),
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: Colors.red,
+                                                ),
+                                                tooltip: 'Delete',
+                                              ),
+                                            ],
                                           ),
-                                          tooltip: 'Reject',
                                         ),
-                                        IconButton(
-                                          onPressed: () => _deletePost(doc.id),
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            color: Colors.red,
-                                          ),
-                                          tooltip: 'Delete',
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               );
                             },
                           );
